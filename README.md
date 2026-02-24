@@ -1,36 +1,164 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Albion Zerg Manager
 
-## Getting Started
+Application web moderne pour la gestion des compositions et activités de zerg dans Albion Online.
 
-First, run the development server:
+![Next.js](https://img.shields.io/badge/Next.js-15-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+![Tailwind](https://img.shields.io/badge/Tailwind-v4-38bdf8)
+![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ecf8e)
+
+## ✨ Fonctionnalités
+
+### Authentification Simplifiée
+- 🔐 Inscription par **pseudo uniquement** (pas d'email)
+- 🎲 Génération automatique d'un **PIN à 4 chiffres**
+- 👤 3 niveaux de rôles: **Joueur**, **Shotcaller**, **Admin**
+
+### Gestion des Activités
+- 📅 Création d'activités avec compositions personnalisées
+- ✅ Inscription des joueurs avec **1 à 3 armes** au choix
+- 📝 Modification des inscriptions avant verrouillage
+- 🎯 3 états: **À venir**, **En cours**, **Terminée**
+
+### Roasters Dynamiques
+- 🖱️ Interface **drag & drop** intuitive
+- 📊 Grilles **4x5** par groupe (jusqu'à 10 groupes)
+- 🎨 Organisation visuelle des joueurs
+- 🔄 Sélection de l'arme finale par joueur
+- 🔒 Verrouillage et démarrage de l'activité
+
+### Compositions
+- 🧩 Création de templates de composition
+- 👥 Configuration de **1 à 10 groupes**
+- ⚔️ Définition des armes par slot
+- 📋 Maximum **20 slots par groupe**
+
+### Interface Moderne
+- 🎨 Design **glass morphism** avec gradients
+- ✨ Animations fluides et micro-interactions
+- 📱 Interface **responsive**
+- 🌈 Couleurs et icônes par catégorie d'arme
+- 🎭 Navigation adaptée selon le rôle
+
+### Administration
+- 🛡️ Gestion des utilisateurs (rôles, activation)
+- ⚔️ Gestion du catalogue d'armes (70+ armes d'Albion)
+- 📊 Statistiques et historiques
+- 🔐 Permissions granulaires par rôle
+
+## 🏗️ Stack Technique
+
+- **Framework:** Next.js 15 (App Router, React Server Components)
+- **Langage:** TypeScript
+- **Styling:** Tailwind CSS v4
+- **UI Components:** Shadcn/UI
+- **Base de données:** Supabase (PostgreSQL)
+- **Drag & Drop:** @dnd-kit
+- **Déploiement:** Vercel
+
+## 🚀 Démarrage Rapide
+
+### 1. Installation
+
+```bash
+npm install
+```
+
+### 2. Configuration Supabase
+
+1. Créer un projet sur https://supabase.com
+2. Exécuter les scripts SQL dans cet ordre :
+   - `database/disable-rls-dev.sql` (désactiver la sécurité pour le dev)
+   - `database/simple-schema.sql` (créer les tables + admin/1234)
+   - `database/insert-weapons.sql` (ajouter les 70+ armes)
+
+### 3. Variables d'environnement
+
+Copier `.env.local.example` vers `.env.local` et remplir :
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...votre_clé_anon
+```
+
+### 4. Lancer en local
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ouvrir http://localhost:3000 et se connecter avec **admin / 1234**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 📦 Déploiement sur Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Voir le guide complet : **[VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md)**
 
-## Learn More
+**TL;DR:**
+1. Push sur GitHub
+2. Importer dans Vercel
+3. Ajouter les env vars
+4. Déployer → C'est en ligne ! 🎉
 
-To learn more about Next.js, take a look at the following resources:
+## 🎮 Utilisation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Pour les Joueurs
+1. **Créer un compte :** `/signup` - Noter le PIN généré
+2. **S'inscrire :** Consulter les activités et proposer 1-3 armes
+3. **Profil :** Voir ses inscriptions et participations
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Pour les Shotcallers
+Tout ce que fait un joueur, plus :
+- ✅ Créer des **compositions**
+- ✅ Créer des **activités**
+- ✅ Gérer les **roasters** (drag & drop)
+- ✅ Confirmer et démarrer les activités
 
-## Deploy on Vercel
+### Pour les Admins
+Tout ce que font les shotcallers, plus :
+- ✅ Gérer les **utilisateurs** (rôles, activation)
+- ✅ Gérer le **catalogue d'armes**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🎨 Catégories d'Armes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Catégorie | Icône | Couleur |
+|-----------|-------|---------|
+| Tank | 🛡️ | Bleu |
+| Healer | 💚 | Vert |
+| DPS Melee | ⚔️ | Rouge |
+| DPS Range | 🏹 | Violet |
+| Support | ✨ | Orange |
+
+## 📊 Base de Données
+
+### Tables
+- `users_profiles` - Utilisateurs (pseudo + PIN)
+- `weapons` - Catalogue d'armes d'Albion
+- `compositions` - Templates de compositions
+- `composition_slots` - Slots d'armes par composition
+- `activities` - Activités/Events
+- `activity_registrations` - Inscriptions des joueurs
+- `roasters` - Compositions finales assignées
+
+## 🛠️ Scripts Disponibles
+
+```bash
+npm run dev        # Serveur de développement
+npm run build      # Build pour production
+npm run start      # Démarrer en production
+npm run lint       # Vérifier le code
+```
+
+## 📝 Structure du Dossier `database/`
+
+- ✅ **`simple-schema.sql`** - Schéma complet (à utiliser)
+- ✅ **`insert-weapons.sql`** - 70+ armes d'Albion (à utiliser)
+- ✅ **`disable-rls-dev.sql`** - Désactiver la sécurité pour le dev (à utiliser)
+
+## 📄 Licence
+
+MIT
+
+---
+
+**Made with ❤️ for Albion Online guilds** ⚔️🛡️
+
