@@ -79,14 +79,14 @@ export default function AdminWeaponsPage() {
       }
 
       if (editingId) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('weapons')
           .update(weaponData)
           .eq('id', editingId)
 
         if (error) throw error
       } else {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from('weapons')
           .insert(weaponData)
 
@@ -105,7 +105,7 @@ export default function AdminWeaponsPage() {
 
   const handleToggleActive = async (weapon: Weapon) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('weapons')
         .update({ is_active: !weapon.is_active })
         .eq('id', weapon.id)
@@ -125,7 +125,7 @@ export default function AdminWeaponsPage() {
     }
 
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('weapons')
         .delete()
         .eq('id', id)

@@ -138,7 +138,7 @@ export default function CompositionsPage() {
 
       if (editingId) {
         // Mise à jour
-        const { error: updateError } = await supabase
+        const { error: updateError } = await (supabase as any)
           .from('compositions')
           .update({
             name: formData.name,
@@ -157,41 +157,40 @@ export default function CompositionsPage() {
 
         // Créer nouveaux slots
         if (validSlots.length > 0) {
-          const { error: slotsError } = await supabase
+          const { error: slotsError } = await (supabase as any)
             .from('composition_slots')
             .insert(validSlots.map(s => ({
               composition_id: editingId,
               weapon_id: s.weapon_id,
-              quantity: s.quantity,
-              group_number: s.group_number
+              group_number: s.group_number,
+              quantity: s.quantity
             })))
 
           if (slotsError) throw slotsError
         }
       } else {
         // Création
-        const { data: newComp, error: createError } = await supabase
+        const { data: newComp, error: createError } = await (supabase as any)
           .from('compositions')
           .insert({
             name: formData.name,
             description: formData.description || null,
-            total_groups: formData.total_groups,
-            created_by: user?.id!
+            total_groups: formData.total_groups
           })
           .select()
           .single()
 
-        if (createError || !newComp) throw createError
+        if (createError) throw createError
 
-        // Créer slots
+        // Créer les slots
         if (validSlots.length > 0) {
-          const { error: slotsError } = await supabase
+          const { error: slotsError } = await (supabase as any)
             .from('composition_slots')
             .insert(validSlots.map(s => ({
               composition_id: newComp.id,
               weapon_id: s.weapon_id,
-              quantity: s.quantity,
-              group_number: s.group_number
+              group_number: s.group_number,
+              quantity: s.quantity
             })))
 
           if (slotsError) throw slotsError

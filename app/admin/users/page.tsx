@@ -64,7 +64,7 @@ export default function AdminUsersPage() {
         return
       }
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('users_profiles')
         .update({
           username: formData.username,
@@ -86,7 +86,7 @@ export default function AdminUsersPage() {
 
   const handleToggleActive = async (userProfile: UserProfile) => {
     try {
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('users_profiles')
         .update({ is_active: !userProfile.is_active })
         .eq('id', userProfile.id)

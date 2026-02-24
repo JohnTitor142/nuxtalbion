@@ -104,11 +104,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const pin = Math.floor(1000 + Math.random() * 9000).toString()
 
     // Créer l'utilisateur (PIN en clair - pas de hash)
-    const { data: newUser, error } = await supabase
+    const { data: newUser, error } = await (supabase as any)
       .from('users_profiles')
       .insert({
         username,
-        pin: pin,  // PIN stocké en clair
+        pin: pin,
         role: 'user' as UserRole,
       })
       .select()
@@ -162,8 +162,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log('✅ PIN correct, sauvegarde de la session...')
 
     // Sauvegarder la session dans les cookies (pour le middleware)
-    setCookie('userId', profile.id, 7) // 7 jours
-    setUser(profile)
+    setCookie('userId', (profile as any).id, 7)
+    setUser(profile as UserProfile)
 
     console.log('✅ Session sauvegardée dans cookie, utilisateur connecté:', profile)
   }

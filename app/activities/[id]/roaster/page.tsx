@@ -252,7 +252,6 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
           .select('*, weapon:weapons(*)')
           .eq('composition_id', comp.id)
           .order('group_number')
-          .order('slot_position')
 
         compSlots = compSlotsData || []
         setCompositionSlots(compSlots)
@@ -275,10 +274,25 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
       // Initialiser les slots (grilles 4x5 par groupe)
       const slots: RoasterSlot[] = []
       for (let group = 1; group <= totalGroups; group++) {
+        // Récupérer les armes de composition pour ce groupe
+        const groupCompSlots = compSlots.filter((cs: any) => cs.group_number === group)
+        let slotIndex = 0
+        
         for (let slot = 1; slot <= 20; slot++) {
           const existing = existingRoaster?.find((r: any) => r.group_number === group && r.slot_position === slot) as any
           const registration = regs?.find((r: any) => r.user_id === existing?.user_id) as any
-          const compSlot = compSlots.find((cs: any) => cs.group_number === group && cs.slot_position === slot)
+          
+          // Trouver l'arme de composition pour ce slot
+          let compWeaponId: string | undefined
+          for (const compSlot of groupCompSlots) {
+            const quantity = compSlot.quantity || 1
+            if (slotIndex < quantity) {
+              compWeaponId = compSlot.weapon_id
+              break
+            }
+            slotIndex -= quantity
+          }
+          slotIndex++
           
           slots.push({
             group_number: group,
@@ -286,7 +300,7 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
             user_id: existing?.user_id,
             weapon_id: existing?.weapon_id,
             registration: registration,
-            composition_weapon_id: compSlot?.weapon_id
+            composition_weapon_id: compWeaponId
           })
         }
       }
@@ -544,9 +558,6 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
                     <CardContent className="p-4">
                       <div className="grid grid-cols-5 gap-2">
                         {groupSlots.map((slot) => {
-                          const compSlot = compositionSlots.find(
-                            cs => cs.group_number === groupNum && cs.slot_position === slot.slot_position
-                          )
                           const compositionWeapon = weapons.find(w => w.id === slot.composition_weapon_id)
                           
                           return (
