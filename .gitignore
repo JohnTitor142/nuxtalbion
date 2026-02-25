@@ -54,3 +54,22 @@ next-env.d.ts
 # OS
 Thumbs.db
 
+# Backups et fichiers temporaires
+*.backup
+*.bak
+*.tmp
+*.temp
+~*
+.~*
+
+# Scripts temporaires
+install-*.ps1
+install-*.sh
+
+# Documentation volumineuse (déjà consolidée dans README.md et DOCS.md)
+CHANGELOG_*.md
+BUILD_*.md
+CORRECTIONS_*.md
+IMPORT_*.md
+*_IMPROVEMENTS.md
+*_DEPLOYMENT.md

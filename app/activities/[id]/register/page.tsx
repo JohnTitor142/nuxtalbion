@@ -67,7 +67,7 @@ export default function RegisterToActivityPage({ params }: { params: Promise<{ i
         .from('weapons')
         .select('*')
         .eq('is_active', true)
-        .order('category', { ascending: true })
+        .order('subcategory_name', { ascending: true })
         .order('name', { ascending: true })
 
       setWeapons(weaponsData || [])

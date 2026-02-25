@@ -14,6 +14,10 @@ import type { Composition, CompositionSlot, Weapon } from '@/types'
 import { Plus, Puzzle, Edit, Trash2, Save, X } from 'lucide-react'
 
 interface CompositionWithSlots extends Composition {
+  id: string
+  name: string
+  description: string | null
+  total_groups: number
   slots?: CompositionSlot[]
 }
 
@@ -63,7 +67,7 @@ export default function CompositionsPage() {
         .from('weapons')
         .select('*')
         .eq('is_active', true)
-        .order('category', { ascending: true })
+        .order('subcategory_name', { ascending: true })
         .order('name', { ascending: true })
 
       setWeapons(weaponsData || [])

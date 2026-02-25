@@ -44,28 +44,166 @@ export interface Database {
       weapons: {
         Row: {
           id: string
+          api_id: number | null
           name: string
-          category: string
-          tier: number | null
+          tier: string
+          item_power: number | null
+          identifier: string
           icon_url: string | null
+          category_name: string | null
+          subcategory_name: string | null
           is_active: boolean
           created_at: string
         }
         Insert: {
           id?: string
+          api_id?: number | null
           name: string
-          category: string
-          tier?: number | null
+          tier: string
+          item_power?: number | null
+          identifier: string
           icon_url?: string | null
+          category_name?: string | null
+          subcategory_name?: string | null
           is_active?: boolean
           created_at?: string
         }
         Update: {
           id?: string
+          api_id?: number | null
           name?: string
-          category?: string
-          tier?: number | null
+          tier?: string
+          item_power?: number | null
+          identifier?: string
           icon_url?: string | null
+          category_name?: string | null
+          subcategory_name?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+      }
+      armors: {
+        Row: {
+          id: string
+          api_id: number | null
+          name: string
+          tier: string
+          item_power: number | null
+          identifier: string
+          icon_url: string | null
+          category_name: string | null
+          subcategory_name: string | null
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          api_id?: number | null
+          name: string
+          tier: string
+          item_power?: number | null
+          identifier: string
+          icon_url?: string | null
+          category_name?: string | null
+          subcategory_name?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          api_id?: number | null
+          name?: string
+          tier?: string
+          item_power?: number | null
+          identifier?: string
+          icon_url?: string | null
+          category_name?: string | null
+          subcategory_name?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+      }
+      accessories: {
+        Row: {
+          id: string
+          api_id: number | null
+          name: string
+          tier: string
+          item_power: number | null
+          identifier: string
+          icon_url: string | null
+          category_name: string | null
+          subcategory_name: string | null
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          api_id?: number | null
+          name: string
+          tier: string
+          item_power?: number | null
+          identifier: string
+          icon_url?: string | null
+          category_name?: string | null
+          subcategory_name?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          api_id?: number | null
+          name?: string
+          tier?: string
+          item_power?: number | null
+          identifier?: string
+          icon_url?: string | null
+          category_name?: string | null
+          subcategory_name?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+      }
+      consumables: {
+        Row: {
+          id: string
+          api_id: number | null
+          name: string
+          tier: string
+          item_power: number | null
+          identifier: string
+          icon_url: string | null
+          info: string | null
+          category_name: string | null
+          subcategory_name: string | null
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          api_id?: number | null
+          name: string
+          tier: string
+          item_power?: number | null
+          identifier: string
+          icon_url?: string | null
+          info?: string | null
+          category_name?: string | null
+          subcategory_name?: string | null
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          api_id?: number | null
+          name?: string
+          tier?: string
+          item_power?: number | null
+          identifier?: string
+          icon_url?: string | null
+          info?: string | null
+          category_name?: string | null
+          subcategory_name?: string | null
           is_active?: boolean
           created_at?: string
         }
@@ -231,15 +369,19 @@ export interface Database {
         }
       }
     }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      [_ in never]: never
-    }
+    Views: {}
+    Functions: {}
     Enums: {
-      user_role: UserRole
-      activity_status: ActivityStatus
+      user_role: {
+        admin: 'admin';
+        shotcaller: 'shotcaller';
+        user: 'user'
+      };
+      activity_status: {
+        upcoming: 'upcoming';
+        ongoing: 'ongoing';
+        completed: 'completed'
+      }
     }
   }
 }

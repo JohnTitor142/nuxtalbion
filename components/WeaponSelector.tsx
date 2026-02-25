@@ -2,7 +2,6 @@
 
 import { Label } from '@/components/ui/label'
 import type { Weapon } from '@/types'
-import { WEAPON_CATEGORIES, CATEGORY_ICONS } from '@/types'
 
 interface WeaponSelectorProps {
   weapons: Weapon[]
@@ -21,11 +20,20 @@ export function WeaponSelector({
   required = false,
   id
 }: WeaponSelectorProps) {
-  // Grouper les armes par catégorie
-  const weaponsByCategory = WEAPON_CATEGORIES.reduce((acc, category) => {
-    acc[category] = weapons.filter(w => w.category === category && w.is_active)
-    return acc
-  }, {} as Record<string, Weapon[]>)
+  // Grouper les armes par sous-catégorie
+  const weaponsBySubcategory = weapons
+    .filter(w => w.is_active)
+    .reduce((acc, weapon) => {
+      const subcategory = weapon.subcategory_name || 'Autre'
+      if (!acc[subcategory]) {
+        acc[subcategory] = []
+      }
+      acc[subcategory].push(weapon)
+      return acc
+    }, {} as Record<string, Weapon[]>)
+
+  // Trier les sous-catégories
+  const sortedSubcategories = Object.keys(weaponsBySubcategory).sort()
 
   return (
     <div className="space-y-2">
@@ -40,15 +48,15 @@ export function WeaponSelector({
         className="flex h-11 w-full rounded-md border border-slate-700 bg-slate-900/50 px-3 py-2 text-white focus:border-purple-500 focus:ring-purple-500/20 focus:outline-none transition-all"
       >
         <option value="">-- Sélectionner une arme --</option>
-        {WEAPON_CATEGORIES.map((category) => {
-          const categoryWeapons = weaponsByCategory[category]
-          if (!categoryWeapons || categoryWeapons.length === 0) return null
+        {sortedSubcategories.map((subcategory) => {
+          const subcategoryWeapons = weaponsBySubcategory[subcategory]
+          if (!subcategoryWeapons || subcategoryWeapons.length === 0) return null
           
           return (
-            <optgroup key={category} label={`${CATEGORY_ICONS[category]} ${category}`}>
-              {categoryWeapons.map((weapon) => (
+            <optgroup key={subcategory} label={`⚔️ ${subcategory}`}>
+              {subcategoryWeapons.map((weapon) => (
                 <option key={weapon.id} value={weapon.id}>
-                  {weapon.name} {weapon.tier ? `(T${weapon.tier})` : ''}
+                  {weapon.name} (T{weapon.tier})
                 </option>
               ))}
             </optgroup>

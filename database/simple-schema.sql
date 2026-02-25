@@ -34,16 +34,65 @@ CREATE TABLE users_profiles (
     CONSTRAINT pin_format CHECK (pin ~ '^\d{4}$')  -- Exactement 4 chiffres
 );
 
--- Tables armes, compositions, etc. (inchangées)
+-- Tables armes, compositions, etc.
 CREATE TABLE weapons (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT UNIQUE NOT NULL,
-    category TEXT NOT NULL,
-    tier INTEGER,
+    api_id INTEGER UNIQUE,
+    name TEXT NOT NULL,
+    tier TEXT NOT NULL,
+    item_power INTEGER,
+    identifier TEXT UNIQUE NOT NULL,
     icon_url TEXT,
+    category_name TEXT,
+    subcategory_name TEXT,
     is_active BOOLEAN DEFAULT true NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
-    CONSTRAINT valid_category CHECK (category IN ('Tank', 'Healer', 'DPS Melee', 'DPS Range', 'Support'))
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+-- Table armures
+CREATE TABLE armors (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    api_id INTEGER UNIQUE,
+    name TEXT NOT NULL,
+    tier TEXT NOT NULL,
+    item_power INTEGER,
+    identifier TEXT UNIQUE NOT NULL,
+    icon_url TEXT,
+    category_name TEXT,
+    subcategory_name TEXT,
+    is_active BOOLEAN DEFAULT true NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+-- Table accessoires
+CREATE TABLE accessories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    api_id INTEGER UNIQUE,
+    name TEXT NOT NULL,
+    tier TEXT NOT NULL,
+    item_power INTEGER,
+    identifier TEXT UNIQUE NOT NULL,
+    icon_url TEXT,
+    category_name TEXT,
+    subcategory_name TEXT,
+    is_active BOOLEAN DEFAULT true NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+);
+
+-- Table consommables
+CREATE TABLE consumables (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    api_id INTEGER UNIQUE,
+    name TEXT NOT NULL,
+    tier TEXT NOT NULL,
+    item_power INTEGER,
+    identifier TEXT UNIQUE NOT NULL,
+    icon_url TEXT,
+    info TEXT,
+    category_name TEXT,
+    subcategory_name TEXT,
+    is_active BOOLEAN DEFAULT true NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
 );
 
 CREATE TABLE compositions (
@@ -107,8 +156,18 @@ CREATE TABLE roasters (
 -- Index
 CREATE INDEX idx_users_username ON users_profiles(username);
 CREATE INDEX idx_users_role ON users_profiles(role);
-CREATE INDEX idx_weapons_category ON weapons(category);
+CREATE INDEX idx_weapons_tier ON weapons(tier);
 CREATE INDEX idx_weapons_active ON weapons(is_active);
+CREATE INDEX idx_weapons_identifier ON weapons(identifier);
+CREATE INDEX idx_armors_tier ON armors(tier);
+CREATE INDEX idx_armors_active ON armors(is_active);
+CREATE INDEX idx_armors_identifier ON armors(identifier);
+CREATE INDEX idx_accessories_tier ON accessories(tier);
+CREATE INDEX idx_accessories_active ON accessories(is_active);
+CREATE INDEX idx_accessories_identifier ON accessories(identifier);
+CREATE INDEX idx_consumables_tier ON consumables(tier);
+CREATE INDEX idx_consumables_active ON consumables(is_active);
+CREATE INDEX idx_consumables_identifier ON consumables(identifier);
 CREATE INDEX idx_compositions_created_by ON compositions(created_by);
 CREATE INDEX idx_composition_slots_composition ON composition_slots(composition_id);
 CREATE INDEX idx_activities_status ON activities(status);
@@ -150,6 +209,9 @@ CREATE TRIGGER update_registrations_updated_at
 -- DÉSACTIVER COMPLÈTEMENT RLS
 ALTER TABLE users_profiles DISABLE ROW LEVEL SECURITY;
 ALTER TABLE weapons DISABLE ROW LEVEL SECURITY;
+ALTER TABLE armors DISABLE ROW LEVEL SECURITY;
+ALTER TABLE accessories DISABLE ROW LEVEL SECURITY;
+ALTER TABLE consumables DISABLE ROW LEVEL SECURITY;
 ALTER TABLE compositions DISABLE ROW LEVEL SECURITY;
 ALTER TABLE composition_slots DISABLE ROW LEVEL SECURITY;
 ALTER TABLE activities DISABLE ROW LEVEL SECURITY;

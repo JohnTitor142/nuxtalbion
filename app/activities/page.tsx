@@ -14,6 +14,7 @@ import type { Activity, ActivityRegistration, Composition } from '@/types'
 import { Plus, Calendar as CalendarIcon, History, Save, X } from 'lucide-react'
 
 interface ActivityWithComposition extends Activity {
+  id: string
   composition?: Composition
   userRegistration?: ActivityRegistration
 }

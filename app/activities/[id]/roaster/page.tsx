@@ -12,9 +12,11 @@ import Link from 'next/link'
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, pointerWithin, useSensor, useSensors, PointerSensor, MouseSensor } from '@dnd-kit/core'
 import { useDroppable } from '@dnd-kit/core'
 import { useDraggable } from '@dnd-kit/core'
-import { CATEGORY_BG_COLORS, CATEGORY_ICONS } from '@/types'
+import { getWeaponIcon } from '@/types'
 
 interface RegistrationWithDetails extends ActivityRegistration {
+  id: string
+  user_id: string
   user?: UserProfile
   weapon1?: Weapon
   weapon2?: Weapon
@@ -60,7 +62,7 @@ function PlayerCard({ registration, selectedWeaponId, onSelectWeapon, isDragging
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
   } : undefined
 
-  const bgColor = selectedWeapon ? CATEGORY_BG_COLORS[selectedWeapon.category] : 'bg-slate-700'
+  const bgColor = 'bg-gradient-to-br from-purple-600 to-pink-600'
 
   return (
     <div
@@ -68,15 +70,27 @@ function PlayerCard({ registration, selectedWeaponId, onSelectWeapon, isDragging
       style={style}
       {...(canManage ? listeners : {})}
       {...(canManage ? attributes : {})}
-      className={`${bgColor} rounded-lg p-3 ${canManage ? 'cursor-move' : 'cursor-default'} transition-all ${canManage ? 'hover:scale-105' : ''} ${isDraggingState ? 'opacity-50' : ''}`}
+      className={`${bgColor} rounded-lg p-4 ${canManage ? 'cursor-move' : 'cursor-default'} transition-all ${canManage ? 'hover:scale-105 hover:shadow-xl' : ''} ${isDraggingState ? 'opacity-50' : ''} shadow-lg`}
     >
-      <div className="flex items-center justify-between mb-2">
-        <p className="font-bold text-white text-sm">{registration.user?.username}</p>
-        <span className="text-xs text-white/80 font-semibold">
-          {selectedWeapon ? CATEGORY_ICONS[selectedWeapon.category] : ''}
-        </span>
+      {/* Nom du joueur + image de l'arme sélectionnée */}
+      <div className="flex items-center justify-between mb-3">
+        <p className="font-bold text-white text-base">{registration.user?.username}</p>
+        <div className="flex items-center gap-1">
+          {selectedWeapon?.icon_url && (
+            <div className="w-10 h-10 bg-black/20 rounded p-1 flex items-center justify-center">
+              <img 
+                src={selectedWeapon.icon_url} 
+                alt={selectedWeapon.name} 
+                className="w-full h-full object-contain"
+                title={selectedWeapon.name}
+              />
+            </div>
+          )}
+        </div>
       </div>
-      <div className="flex gap-1">
+      
+      {/* Sélection des armes - UNIQUEMENT avec images */}
+      <div className="flex gap-2 justify-center">
         {weapons.map((weapon) => (
           <button
             key={weapon.id}
@@ -84,14 +98,27 @@ function PlayerCard({ registration, selectedWeaponId, onSelectWeapon, isDragging
               e.stopPropagation()
               onSelectWeapon(weapon.id)
             }}
-            className={`flex-1 px-2 py-1 text-xs rounded transition-all ${
+            className={`relative group transition-all ${
               selectedWeaponId === weapon.id
-                ? 'bg-white/30 text-white font-bold'
-                : 'bg-white/10 text-white/70 hover:bg-white/20'
+                ? 'ring-2 ring-white ring-offset-2 ring-offset-purple-600 scale-110'
+                : 'opacity-60 hover:opacity-100 hover:scale-105'
             }`}
             disabled={!canManage}
+            title={weapon.name}
           >
-            {weapon.name}
+            <div className={`w-12 h-12 bg-black/30 rounded p-1.5 flex items-center justify-center ${
+              selectedWeaponId === weapon.id ? 'bg-white/20' : ''
+            }`}>
+              {weapon.icon_url ? (
+                <img 
+                  src={weapon.icon_url} 
+                  alt={weapon.name} 
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className="w-full h-full bg-slate-700 rounded flex items-center justify-center text-xs text-slate-400">?</div>
+              )}
+            </div>
           </button>
         ))}
       </div>
@@ -113,8 +140,6 @@ function Slot({ slot, onRemove, compositionWeapon, isLocked, canManage = false }
     data: slot,
     disabled: !canManage
   })
-
-  const weapon = slot.registration?.weapon1 || slot.registration?.weapon2 || slot.registration?.weapon3
   
   // Trouver l'arme actuellement assignée
   let assignedWeapon: Weapon | undefined
@@ -124,45 +149,69 @@ function Slot({ slot, onRemove, compositionWeapon, isLocked, canManage = false }
     if (slot.registration.weapon3?.id === slot.weapon_id) assignedWeapon = slot.registration.weapon3
   }
   
-  const bgColor = assignedWeapon ? CATEGORY_BG_COLORS[assignedWeapon.category] : 'bg-slate-800/30'
+  const bgColor = assignedWeapon ? 'bg-gradient-to-br from-purple-600/80 to-pink-600/80' : 'bg-slate-800/30'
 
   return (
     <div
       ref={setNodeRef}
-      className={`aspect-square rounded border-2 border-dashed p-2 text-center transition-all flex flex-col ${
+      className={`aspect-square rounded border-2 border-dashed p-3 text-center transition-all flex flex-col ${
         isOver ? 'border-purple-400 bg-purple-400/20 scale-105' : 
         slot.user_id ? `${bgColor} border-transparent` : 
         'border-slate-700/50 hover:border-slate-600'
       }`}
     >
-      {/* Arme de composition - TOUJOURS affichée en haut */}
+      {/* Arme de composition - en haut */}
       <div className="flex-shrink-0 mb-auto">
         {compositionWeapon ? (
-          <div className="flex flex-col items-center">
-            <span className="text-slate-300 text-base mb-0.5">
-              {CATEGORY_ICONS[compositionWeapon.category]}
-            </span>
-            <span className="text-slate-300 text-[8px] font-semibold text-center leading-tight truncate w-full">
-              {compositionWeapon.name}
-            </span>
+          <div className="flex flex-col items-center gap-1">
+            {compositionWeapon.icon_url ? (
+              <img 
+                src={compositionWeapon.icon_url} 
+                alt={compositionWeapon.name} 
+                className="w-10 h-10 object-contain"
+                title={compositionWeapon.name}
+              />
+            ) : (
+              <div className="w-10 h-10 bg-slate-700 rounded flex items-center justify-center text-slate-400">?</div>
+            )}
           </div>
         ) : (
-          <span className="text-slate-600 text-xs font-semibold">fill</span>
+          <div className="w-10 h-10 flex items-center justify-center">
+            <span className="text-slate-600 text-xs font-semibold">fill</span>
+          </div>
         )}
       </div>
+
+      {/* Arme assignée au joueur - au centre */}
+      {assignedWeapon && (
+        <div className="flex-shrink-0 my-1">
+          <div className="flex flex-col items-center">
+            {assignedWeapon.icon_url && (
+              <div className="w-12 h-12 bg-black/40 rounded p-1 flex items-center justify-center">
+                <img 
+                  src={assignedWeapon.icon_url} 
+                  alt={assignedWeapon.name} 
+                  className="w-full h-full object-contain"
+                  title={assignedWeapon.name}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Joueur assigné - en bas */}
       {slot.user_id && slot.registration && (
         <div className="flex-shrink-0 mt-auto relative">
-          <div className="bg-black/30 rounded px-1.5 py-1">
-            <p className="text-white text-[10px] font-bold truncate">
+          <div className="bg-black/40 rounded px-2 py-1.5">
+            <p className="text-white text-[11px] font-bold truncate">
               {slot.registration.user?.username}
             </p>
           </div>
           {!isLocked && canManage && (
             <button
               onClick={onRemove}
-              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] hover:bg-red-600"
+              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 shadow-lg"
             >
               ✕
             </button>
@@ -550,25 +599,29 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Grille des emplacements - 3/4 de l'écran */}
-          <div className="lg:col-span-3">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* Grille des emplacements - 4/5 de l'écran */}
+          <div className="lg:col-span-4">
             <h2 className="text-xl font-bold text-white mb-4">Roster</h2>
-            <div className="grid gap-4" style={{ 
-              gridTemplateColumns: `repeat(${totalGroups}, 1fr)`,
-              maxWidth: '100%'
-            }}>
+            {/* Un groupe par ligne, à la verticale */}
+            <div className="space-y-4">
               {Array.from({ length: totalGroups }, (_, groupIndex) => {
                 const groupNum = groupIndex + 1
                 const groupSlots = roasterSlots.filter(s => s.group_number === groupNum)
                 
                 return (
                   <Card key={groupNum} className="glass-effect border-slate-700/50">
-                    <CardHeader className="py-4 px-4">
-                      <CardTitle className="text-center text-lg text-white">Groupe {groupNum}</CardTitle>
+                    <CardHeader className="py-3 px-5 border-b border-slate-700/50">
+                      <CardTitle className="text-lg text-white flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold shadow-lg">
+                          {groupNum}
+                        </div>
+                        <span>Groupe {groupNum}</span>
+                      </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-4">
-                      <div className="grid grid-cols-5 gap-2">
+                    <CardContent className="p-5">
+                      {/* Grille 4 lignes x 5 colonnes */}
+                      <div className="grid grid-cols-5 gap-3">
                         {groupSlots.map((slot) => {
                           const compositionWeapon = weapons.find(w => w.id === slot.composition_weapon_id)
                           
@@ -591,15 +644,15 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
             </div>
           </div>
 
-          {/* Liste des joueurs inscrits - 1/4 de l'écran */}
+          {/* Liste des joueurs inscrits - 1/5 de l'écran */}
           {canManage && (
             <div className="lg:col-span-1">
               <h2 className="text-xl font-bold text-white mb-4">
                 Joueurs en attente ({availableRegistrations.length})
               </h2>
-              <Card className="glass-effect border-slate-700/50">
+              <Card className="glass-effect border-slate-700/50 sticky top-6">
                 <CardContent className="p-4">
-                  <div className="space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto pr-2" style={{
+                  <div className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto pr-2" style={{
                     scrollbarWidth: 'thin',
                     scrollbarColor: '#475569 #1e293b'
                   }}>
@@ -620,7 +673,7 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
                     {availableRegistrations.length === 0 && (
                       <div className="text-center text-slate-500 py-12">
                         <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                        <p>Tous les joueurs sont assignés</p>
+                        <p className="text-sm">Tous les joueurs sont assignés</p>
                       </div>
                     )}
                   </div>
@@ -635,9 +688,9 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
               <h2 className="text-xl font-bold text-white mb-4">
                 Joueurs inscrits ({registrations.length})
               </h2>
-              <Card className="glass-effect border-slate-700/50">
+              <Card className="glass-effect border-slate-700/50 sticky top-6">
                 <CardContent className="p-4">
-                  <div className="space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto pr-2" style={{
+                  <div className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto pr-2" style={{
                     scrollbarWidth: 'thin',
                     scrollbarColor: '#475569 #1e293b'
                   }}>

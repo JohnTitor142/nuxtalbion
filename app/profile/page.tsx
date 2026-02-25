@@ -6,9 +6,10 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { ActivityRegistration, Activity, Roaster, Weapon } from '@/types'
 import { User, Calendar, Trophy, Shield, Users as UsersIcon } from 'lucide-react'
-import { CATEGORY_ICONS } from '@/types'
+import { getWeaponIcon } from '@/types'
 
 interface RegistrationWithDetails extends ActivityRegistration {
+  id: string
   activity?: Activity
   weapon1?: Weapon
   weapon2?: Weapon
@@ -16,6 +17,9 @@ interface RegistrationWithDetails extends ActivityRegistration {
 }
 
 interface RoasterWithDetails extends Roaster {
+  id: string
+  group_number: number
+  slot_position: number
   activity?: Activity
   weapon?: Weapon
 }
@@ -194,18 +198,27 @@ export default function ProfilePage() {
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {reg.weapon1 && (
-                          <span className="px-4 py-2 rounded-full bg-purple-500/20 text-purple-300 text-base font-medium">
-                            {CATEGORY_ICONS[reg.weapon1.category]} {reg.weapon1.name}
+                          <span className="px-4 py-2 rounded-full bg-purple-500/20 text-purple-300 text-base font-medium flex items-center gap-2">
+                            {reg.weapon1.icon_url && (
+                              <img src={reg.weapon1.icon_url} alt="" className="w-5 h-5 inline-block" />
+                            )}
+                            {getWeaponIcon(reg.weapon1)} {reg.weapon1.name}
                           </span>
                         )}
                         {reg.weapon2 && (
-                          <span className="px-4 py-2 rounded-full bg-blue-500/20 text-blue-300 text-base font-medium">
-                            {CATEGORY_ICONS[reg.weapon2.category]} {reg.weapon2.name}
+                          <span className="px-4 py-2 rounded-full bg-blue-500/20 text-blue-300 text-base font-medium flex items-center gap-2">
+                            {reg.weapon2.icon_url && (
+                              <img src={reg.weapon2.icon_url} alt="" className="w-5 h-5 inline-block" />
+                            )}
+                            {getWeaponIcon(reg.weapon2)} {reg.weapon2.name}
                           </span>
                         )}
                         {reg.weapon3 && (
-                          <span className="px-4 py-2 rounded-full bg-green-500/20 text-green-300 text-base font-medium">
-                            {CATEGORY_ICONS[reg.weapon3.category]} {reg.weapon3.name}
+                          <span className="px-4 py-2 rounded-full bg-green-500/20 text-green-300 text-base font-medium flex items-center gap-2">
+                            {reg.weapon3.icon_url && (
+                              <img src={reg.weapon3.icon_url} alt="" className="w-5 h-5 inline-block" />
+                            )}
+                            {getWeaponIcon(reg.weapon3)} {reg.weapon3.name}
                           </span>
                         )}
                       </div>
@@ -244,8 +257,11 @@ export default function ProfilePage() {
                         })}
                       </p>
                       {participation.weapon && (
-                        <span className="px-4 py-2 rounded-full bg-slate-700/50 text-slate-400 text-base">
-                          {CATEGORY_ICONS[participation.weapon.category]} {participation.weapon.name}
+                        <span className="px-4 py-2 rounded-full bg-slate-700/50 text-slate-400 text-base flex items-center gap-2">
+                          {participation.weapon.icon_url && (
+                            <img src={participation.weapon.icon_url} alt="" className="w-5 h-5 inline-block" />
+                          )}
+                          {getWeaponIcon(participation.weapon)} {participation.weapon.name}
                         </span>
                       )}
                     </div>
