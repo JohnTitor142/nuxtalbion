@@ -179,7 +179,8 @@ export default function CompositionsPage() {
           .insert({
             name: formData.name,
             description: formData.description || null,
-            total_groups: formData.total_groups
+            total_groups: formData.total_groups,
+            created_by: user.id
           })
           .select()
           .single()
