@@ -152,9 +152,9 @@ export default function ActivitiesPage() {
 
   return (
     <>
-      <div className="space-y-8 animate-fade-in max-w-7xl mx-auto">
+      <div className="space-y-10 animate-fade-in max-w-7xl mx-auto px-6">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-10">
           <div>
             <h1 className="text-5xl font-bold text-white mb-3 flex items-center gap-3">
               <CalendarIcon className="w-10 h-10 text-purple-400" />
@@ -205,7 +205,7 @@ export default function ActivitiesPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {upcomingActivities.map((activity) => (
                 <ActivityCard
                   key={activity.id}
@@ -233,7 +233,7 @@ export default function ActivitiesPage() {
               </span>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-6">
               {completedActivities.map((activity) => (
                 <ActivityCard
                   key={activity.id}

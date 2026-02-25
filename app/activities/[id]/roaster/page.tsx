@@ -35,9 +35,10 @@ interface PlayerCardProps {
   selectedWeaponId: string
   onSelectWeapon: (weaponId: string) => void
   isDragging?: boolean
+  canManage?: boolean
 }
 
-function PlayerCard({ registration, selectedWeaponId, onSelectWeapon, isDragging = false }: PlayerCardProps) {
+function PlayerCard({ registration, selectedWeaponId, onSelectWeapon, isDragging = false, canManage = false }: PlayerCardProps) {
   const weapons = [
     registration.weapon1,
     registration.weapon2,
@@ -51,7 +52,8 @@ function PlayerCard({ registration, selectedWeaponId, onSelectWeapon, isDragging
     data: {
       registration,
       selectedWeaponId: selectedWeapon?.id
-    }
+    },
+    disabled: !canManage
   })
 
   const style = transform ? {
@@ -64,9 +66,9 @@ function PlayerCard({ registration, selectedWeaponId, onSelectWeapon, isDragging
     <div
       ref={setNodeRef}
       style={style}
-      {...listeners}
-      {...attributes}
-      className={`${bgColor} rounded-lg p-3 cursor-move transition-all hover:scale-105 ${isDraggingState ? 'opacity-50' : ''}`}
+      {...(canManage ? listeners : {})}
+      {...(canManage ? attributes : {})}
+      className={`${bgColor} rounded-lg p-3 ${canManage ? 'cursor-move' : 'cursor-default'} transition-all ${canManage ? 'hover:scale-105' : ''} ${isDraggingState ? 'opacity-50' : ''}`}
     >
       <div className="flex items-center justify-between mb-2">
         <p className="font-bold text-white text-sm">{registration.user?.username}</p>
@@ -87,6 +89,7 @@ function PlayerCard({ registration, selectedWeaponId, onSelectWeapon, isDragging
                 ? 'bg-white/30 text-white font-bold'
                 : 'bg-white/10 text-white/70 hover:bg-white/20'
             }`}
+            disabled={!canManage}
           >
             {weapon.name}
           </button>
@@ -101,12 +104,14 @@ interface SlotProps {
   onRemove: () => void
   compositionWeapon?: Weapon
   isLocked: boolean
+  canManage?: boolean
 }
 
-function Slot({ slot, onRemove, compositionWeapon, isLocked }: SlotProps) {
+function Slot({ slot, onRemove, compositionWeapon, isLocked, canManage = false }: SlotProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: `slot-${slot.group_number}-${slot.slot_position}`,
-    data: slot
+    data: slot,
+    disabled: !canManage
   })
 
   const weapon = slot.registration?.weapon1 || slot.registration?.weapon2 || slot.registration?.weapon3
@@ -124,39 +129,43 @@ function Slot({ slot, onRemove, compositionWeapon, isLocked }: SlotProps) {
   return (
     <div
       ref={setNodeRef}
-      className={`aspect-square rounded border-2 border-dashed p-2 text-center transition-all ${
+      className={`aspect-square rounded border-2 border-dashed p-2 text-center transition-all flex flex-col ${
         isOver ? 'border-purple-400 bg-purple-400/20 scale-105' : 
         slot.user_id ? `${bgColor} border-transparent` : 
         'border-slate-700/50 hover:border-slate-600'
       }`}
     >
-      {slot.user_id && slot.registration ? (
-        <div className="flex flex-col h-full justify-center items-center relative">
-          <p className="text-white text-xs font-bold truncate w-full mb-1">
-            {slot.registration.user?.username}
-          </p>
-          {!isLocked && (
+      {/* Arme de composition - TOUJOURS affichée en haut */}
+      <div className="flex-shrink-0 mb-auto">
+        {compositionWeapon ? (
+          <div className="flex flex-col items-center">
+            <span className="text-slate-300 text-base mb-0.5">
+              {CATEGORY_ICONS[compositionWeapon.category]}
+            </span>
+            <span className="text-slate-300 text-[8px] font-semibold text-center leading-tight truncate w-full">
+              {compositionWeapon.name}
+            </span>
+          </div>
+        ) : (
+          <span className="text-slate-600 text-xs font-semibold">fill</span>
+        )}
+      </div>
+
+      {/* Joueur assigné - en bas */}
+      {slot.user_id && slot.registration && (
+        <div className="flex-shrink-0 mt-auto relative">
+          <div className="bg-black/30 rounded px-1.5 py-1">
+            <p className="text-white text-[10px] font-bold truncate">
+              {slot.registration.user?.username}
+            </p>
+          </div>
+          {!isLocked && canManage && (
             <button
               onClick={onRemove}
-              className="absolute top-0 right-0 text-white/70 hover:text-white text-xs"
+              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] hover:bg-red-600"
             >
               ✕
             </button>
-          )}
-        </div>
-      ) : (
-        <div className="flex flex-col h-full justify-center items-center px-1">
-          {compositionWeapon ? (
-            <>
-              <span className="text-slate-500 text-lg mb-1">
-                {CATEGORY_ICONS[compositionWeapon.category]}
-              </span>
-              <span className="text-slate-400 text-[9px] font-medium text-center leading-tight truncate w-full">
-                {compositionWeapon.name}
-              </span>
-            </>
-          ) : (
-            <span className="text-slate-600 text-xs font-semibold">fill</span>
           )}
         </div>
       )}
@@ -166,7 +175,7 @@ function Slot({ slot, onRemove, compositionWeapon, isLocked }: SlotProps) {
 
 export default function RoasterPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { user, loading: authLoading } = useRequireAuth(['admin', 'shotcaller'])
+  const { user, loading: authLoading } = useRequireAuth() // Accessible à tous les utilisateurs connectés
   const [activity, setActivity] = useState<Activity | null>(null)
   const [registrations, setRegistrations] = useState<RegistrationWithDetails[]>([])
   const [roasterSlots, setRoasterSlots] = useState<RoasterSlot[]>([])
@@ -276,23 +285,24 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
       for (let group = 1; group <= totalGroups; group++) {
         // Récupérer les armes de composition pour ce groupe
         const groupCompSlots = compSlots.filter((cs: any) => cs.group_number === group)
-        let slotIndex = 0
+        
+        // Distribuer les armes selon les quantités
+        let currentSlotIndex = 0
+        const weaponDistribution: string[] = []
+        
+        for (const compSlot of groupCompSlots) {
+          const quantity = compSlot.quantity || 1
+          for (let i = 0; i < quantity; i++) {
+            weaponDistribution.push(compSlot.weapon_id)
+          }
+        }
         
         for (let slot = 1; slot <= 20; slot++) {
           const existing = existingRoaster?.find((r: any) => r.group_number === group && r.slot_position === slot) as any
           const registration = regs?.find((r: any) => r.user_id === existing?.user_id) as any
           
-          // Trouver l'arme de composition pour ce slot
-          let compWeaponId: string | undefined
-          for (const compSlot of groupCompSlots) {
-            const quantity = compSlot.quantity || 1
-            if (slotIndex < quantity) {
-              compWeaponId = compSlot.weapon_id
-              break
-            }
-            slotIndex -= quantity
-          }
-          slotIndex++
+          // Assigner l'arme de composition pour ce slot
+          const compWeaponId = weaponDistribution[slot - 1] || undefined
           
           slots.push({
             group_number: group,
@@ -473,6 +483,7 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
   const composition = (activity as any)?.composition
   const comp = Array.isArray(composition) ? composition[0] : composition
   const totalGroups = comp?.total_groups || 1
+  const canManage = user?.role === 'admin' || user?.role === 'shotcaller'
   // Filtrer les joueurs déjà assignés - ils ne doivent apparaître qu'une seule fois
   const assignedUserIds = new Set(roasterSlots.filter(s => s.user_id).map(s => s.user_id))
   const availableRegistrations = registrations.filter(r => !assignedUserIds.has(r.user_id))
@@ -484,7 +495,7 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
       onDragEnd={handleDragEnd}
       collisionDetection={pointerWithin}
     >
-      <div className="space-y-6 animate-fade-in max-w-[1800px] mx-auto">
+      <div className="space-y-6 animate-fade-in max-w-[1800px] mx-auto px-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
@@ -496,13 +507,14 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
             <div>
               <h1 className="text-3xl font-bold text-white flex items-center gap-2">
                 <Users className="w-7 h-7 text-purple-400" />
-                Gestion des Joueurs
+                {canManage ? 'Gestion des Joueurs' : 'Roster de l\'activité'}
               </h1>
               <p className="text-slate-400 mt-1">{activity?.name}</p>
             </div>
           </div>
 
-          <div className="flex gap-3">{!activity?.roaster_locked && (
+          <div className="flex gap-3">
+            {canManage && !activity?.roaster_locked && (
               <>
                 <Button
                   onClick={handleSave}
@@ -567,6 +579,7 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
                               onRemove={() => handleRemoveFromSlot(groupNum, slot.slot_position)}
                               compositionWeapon={compositionWeapon}
                               isLocked={!!activity?.roaster_locked}
+                              canManage={canManage}
                             />
                           )
                         })}
@@ -579,39 +592,75 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
           </div>
 
           {/* Liste des joueurs inscrits - 1/4 de l'écran */}
-          <div className="lg:col-span-1">
-            <h2 className="text-xl font-bold text-white mb-4">
-              Joueurs en attente ({availableRegistrations.length})
-            </h2>
-            <Card className="glass-effect border-slate-700/50">
-              <CardContent className="p-4">
-                <div className="space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto pr-2" style={{
-                  scrollbarWidth: 'thin',
-                  scrollbarColor: '#475569 #1e293b'
-                }}>
-                  {availableRegistrations.map((reg) => (
-                    <PlayerCard
-                      key={reg.id}
-                      registration={reg}
-                      selectedWeaponId={selectedWeapons[reg.id]}
-                      onSelectWeapon={(weaponId) => {
-                        setSelectedWeapons(prev => ({
-                          ...prev,
-                          [reg.id]: weaponId
-                        }))
-                      }}
-                    />
-                  ))}
-                  {availableRegistrations.length === 0 && (
-                    <div className="text-center text-slate-500 py-12">
-                      <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p>Tous les joueurs sont assignés</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {canManage && (
+            <div className="lg:col-span-1">
+              <h2 className="text-xl font-bold text-white mb-4">
+                Joueurs en attente ({availableRegistrations.length})
+              </h2>
+              <Card className="glass-effect border-slate-700/50">
+                <CardContent className="p-4">
+                  <div className="space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto pr-2" style={{
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#475569 #1e293b'
+                  }}>
+                    {availableRegistrations.map((reg) => (
+                      <PlayerCard
+                        key={reg.id}
+                        registration={reg}
+                        selectedWeaponId={selectedWeapons[reg.id]}
+                        onSelectWeapon={(weaponId) => {
+                          setSelectedWeapons(prev => ({
+                            ...prev,
+                            [reg.id]: weaponId
+                          }))
+                        }}
+                        canManage={canManage}
+                      />
+                    ))}
+                    {availableRegistrations.length === 0 && (
+                      <div className="text-center text-slate-500 py-12">
+                        <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p>Tous les joueurs sont assignés</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* Liste des joueurs inscrits pour les utilisateurs sans droits de gestion */}
+          {!canManage && registrations.length > 0 && (
+            <div className="lg:col-span-1">
+              <h2 className="text-xl font-bold text-white mb-4">
+                Joueurs inscrits ({registrations.length})
+              </h2>
+              <Card className="glass-effect border-slate-700/50">
+                <CardContent className="p-4">
+                  <div className="space-y-3 max-h-[calc(100vh-250px)] overflow-y-auto pr-2" style={{
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#475569 #1e293b'
+                  }}>
+                    {registrations.map((reg) => {
+                      // Afficher l'arme assignée dans le roster, ou la première arme par défaut
+                      const assignedSlot = roasterSlots.find(s => s.user_id === reg.user_id)
+                      const defaultWeaponId = assignedSlot?.weapon_id || reg.weapon1?.id || reg.weapon2?.id || reg.weapon3?.id
+                      
+                      return (
+                        <PlayerCard
+                          key={reg.id}
+                          registration={reg}
+                          selectedWeaponId={defaultWeaponId || ''}
+                          onSelectWeapon={() => {}}
+                          canManage={false}
+                        />
+                      )
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
 
@@ -628,6 +677,7 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
                   selectedWeaponId={selectedWeapons[regId]}
                   onSelectWeapon={() => {}}
                   isDragging
+                  canManage={canManage}
                 />
               ) : null
             })()}

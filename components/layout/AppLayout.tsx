@@ -51,7 +51,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       
       <Sidebar />
       <main className="flex-1 overflow-y-auto relative z-10">
-        <div className="w-full h-full px-8 py-8">
+        <div className="w-full h-full px-12 py-12">
           {children}
         </div>
       </main>
