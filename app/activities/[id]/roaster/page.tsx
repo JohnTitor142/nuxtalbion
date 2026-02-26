@@ -70,27 +70,15 @@ function PlayerCard({ registration, selectedWeaponId, onSelectWeapon, isDragging
       style={style}
       {...(canManage ? listeners : {})}
       {...(canManage ? attributes : {})}
-      className={`${bgColor} rounded-lg p-4 ${canManage ? 'cursor-move' : 'cursor-default'} transition-all ${canManage ? 'hover:scale-105 hover:shadow-xl' : ''} ${isDraggingState ? 'opacity-50' : ''} shadow-lg`}
+      className={`${bgColor} rounded-xl p-5 ${canManage ? 'cursor-move' : 'cursor-default'} transition-all ${canManage ? 'hover:scale-105 hover:shadow-xl' : ''} ${isDraggingState ? 'opacity-50' : ''} shadow-lg`}
     >
-      {/* Nom du joueur + image de l'arme sélectionnée */}
-      <div className="flex items-center justify-between mb-3">
-        <p className="font-bold text-white text-base">{registration.user?.username}</p>
-        <div className="flex items-center gap-1">
-          {selectedWeapon?.icon_url && (
-            <div className="w-10 h-10 bg-black/20 rounded p-1 flex items-center justify-center">
-              <img
-                src={selectedWeapon.icon_url}
-                alt={selectedWeapon.name}
-                className="w-full h-full object-contain"
-                title={selectedWeapon.name}
-              />
-            </div>
-          )}
-        </div>
+      {/* Nom du joueur */}
+      <div className="flex items-center justify-center mb-4">
+        <p className="font-bold text-white text-lg tracking-wide bg-black/20 px-4 py-1 rounded-full shadow-inner">{registration.user?.username}</p>
       </div>
 
       {/* Sélection des armes - UNIQUEMENT avec images */}
-      <div className="flex gap-2 justify-center">
+      <div className="flex gap-4 justify-center">
         {weapons.map((weapon) => (
           <button
             key={weapon.id}
@@ -99,22 +87,22 @@ function PlayerCard({ registration, selectedWeaponId, onSelectWeapon, isDragging
               onSelectWeapon(weapon.id)
             }}
             className={`relative group transition-all ${selectedWeaponId === weapon.id
-              ? 'ring-2 ring-white ring-offset-2 ring-offset-purple-600 scale-110'
+              ? 'ring-4 ring-white ring-offset-2 ring-offset-purple-600 scale-110 z-10'
               : 'opacity-60 hover:opacity-100 hover:scale-105'
               }`}
             disabled={!canManage}
             title={weapon.name}
           >
-            <div className={`w-12 h-12 bg-black/30 rounded p-1.5 flex items-center justify-center ${selectedWeaponId === weapon.id ? 'bg-white/20' : ''
+            <div className={`w-16 h-16 bg-black/40 rounded-xl p-2 flex items-center justify-center shadow-inner ${selectedWeaponId === weapon.id ? 'bg-white/20' : ''
               }`}>
               {weapon.icon_url ? (
                 <img
                   src={weapon.icon_url}
                   alt={weapon.name}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain drop-shadow-md"
                 />
               ) : (
-                <div className="w-full h-full bg-slate-700 rounded flex items-center justify-center text-xs text-slate-400">?</div>
+                <div className="w-full h-full bg-slate-700/50 rounded-lg flex items-center justify-center text-sm font-bold text-slate-400">?</div>
               )}
             </div>
           </button>
@@ -152,68 +140,80 @@ function Slot({ slot, onRemove, compositionWeapon, isLocked, canManage = false }
   return (
     <div
       ref={setNodeRef}
-      className={`aspect-square rounded border-2 border-dashed p-3 text-center transition-all flex flex-col ${isOver ? 'border-purple-400 bg-purple-400/20 scale-105' :
-        slot.user_id ? `${bgColor} border-transparent` :
+      className={`aspect-square rounded border-2 border-dashed p-3 text-center transition-all flex flex-col relative overflow-hidden ${isOver ? 'border-purple-400 bg-purple-400/20 scale-105' :
+        slot.user_id ? `${bgColor} border-transparent shadow-md` :
           'border-slate-700/50 hover:border-slate-600'
         }`}
     >
-      {/* Arme de composition - en haut */}
-      <div className="flex-shrink-0 mb-auto">
-        {compositionWeapon ? (
-          <div className="flex flex-col items-center gap-1">
-            {compositionWeapon.icon_url ? (
-              <img
-                src={compositionWeapon.icon_url}
-                alt={compositionWeapon.name}
-                className="w-10 h-10 object-contain"
-                title={compositionWeapon.name}
-              />
-            ) : (
-              <div className="w-10 h-10 bg-slate-700 rounded flex items-center justify-center text-slate-400">?</div>
-            )}
-          </div>
-        ) : (
-          <div className="w-10 h-10 flex items-center justify-center">
-            <span className="text-slate-600 text-xs font-semibold">fill</span>
-          </div>
-        )}
-      </div>
+      {!slot.user_id ? (
+        // Slot vide : Arme requise au centre
+        <div className="flex-1 flex flex-col items-center justify-center">
+          {compositionWeapon ? (
+            <div className="flex flex-col items-center gap-2 opacity-60">
+              {compositionWeapon.icon_url ? (
+                <img
+                  src={compositionWeapon.icon_url}
+                  alt={compositionWeapon.name}
+                  className="w-20 h-20 object-contain drop-shadow-md"
+                  title={compositionWeapon.name}
+                />
+              ) : (
+                <div className="w-20 h-20 bg-slate-800/80 rounded-xl flex items-center justify-center text-slate-500 font-bold text-2xl drop-shadow-sm">?</div>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full opacity-40">
+              <span className="text-slate-500 text-sm font-semibold">Libre</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        // Slot assigné : Arme du joueur au centre
+        <>
+          {/* Indicateur de l'arme demandée en miniature (en haut à gauche) */}
+          {compositionWeapon && (
+            <div className="absolute top-2 left-2 opacity-50">
+              {compositionWeapon.icon_url && (
+                <img
+                  src={compositionWeapon.icon_url}
+                  alt={compositionWeapon.name}
+                  className="w-7 h-7 object-contain drop-shadow"
+                  title={`Requis: ${compositionWeapon.name}`}
+                />
+              )}
+            </div>
+          )}
 
-      {/* Arme assignée au joueur - au centre */}
-      {assignedWeapon && (
-        <div className="flex-shrink-0 my-1">
-          <div className="flex flex-col items-center">
-            {assignedWeapon.icon_url && (
-              <div className="w-12 h-12 bg-black/40 rounded p-1 flex items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center min-h-0 relative z-10">
+            {assignedWeapon && assignedWeapon.icon_url && (
+              <div className="w-24 h-24 bg-black/20 rounded-xl p-2 flex items-center justify-center drop-shadow-xl transform transition-transform hover:scale-105">
                 <img
                   src={assignedWeapon.icon_url}
                   alt={assignedWeapon.name}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain drop-shadow-md"
                   title={assignedWeapon.name}
                 />
               </div>
             )}
           </div>
-        </div>
-      )}
 
-      {/* Joueur assigné - en bas */}
-      {slot.user_id && slot.registration && (
-        <div className="flex-shrink-0 mt-auto relative">
-          <div className="bg-black/40 rounded px-2 py-1.5">
-            <p className="text-white text-[11px] font-bold truncate">
-              {slot.registration.user?.username}
-            </p>
+          {/* Joueur assigné - en bas */}
+          <div className="flex-shrink-0 mt-2 relative z-20">
+            <div className="bg-black/60 backdrop-blur-sm rounded-md px-2 py-1.5 shadow-lg border border-white/5 mx-1">
+              <p className="text-white text-[13px] font-bold truncate tracking-wide">
+                {slot.registration?.user?.username}
+              </p>
+            </div>
+            {!isLocked && canManage && (
+              <button
+                onClick={onRemove}
+                className="absolute -top-2 -right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold hover:bg-red-600 shadow-xl border border-white/20 transition-transform hover:scale-110"
+              >
+                ✕
+              </button>
+            )}
           </div>
-          {!isLocked && canManage && (
-            <button
-              onClick={onRemove}
-              className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 shadow-lg"
-            >
-              ✕
-            </button>
-          )}
-        </div>
+        </>
       )}
     </div>
   )

@@ -11,7 +11,7 @@ import { WeaponSelector } from '@/components/WeaponSelector'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Composition, CompositionSlot, Weapon } from '@/types'
-import { Plus, Puzzle, Edit, Trash2, Save, X } from 'lucide-react'
+import { Plus, Puzzle, Edit, Trash2, Save, X, ChevronLeft } from 'lucide-react'
 
 interface CompositionWithSlots extends Composition {
   id: string
@@ -105,7 +105,7 @@ export default function CompositionsPage() {
   const handleAddSlot = () => {
     const groupSlots = slots.filter(s => s.group_number === activeGroupForm)
     const totalInGroup = groupSlots.reduce((sum, s) => sum + s.quantity, 0)
-    
+
     if (totalInGroup >= 20) {
       alert('Un groupe ne peut pas avoir plus de 20 slots')
       return
@@ -119,7 +119,27 @@ export default function CompositionsPage() {
   }
 
   const handleSlotChange = (index: number, field: 'weapon_id' | 'quantity', value: string | number) => {
-    setSlots(slots.map((s, i) => i === index ? { ...s, [field]: value } : s))
+    if (field === 'quantity') {
+      let finalNum = typeof value === 'string' ? parseInt(value) : (value as number)
+      if (isNaN(finalNum)) finalNum = 0 // Permet de vider le champ
+
+      const otherTotal = slots
+        .filter((s, i) => i !== index && s.group_number === slots[index].group_number)
+        .reduce((sum, s) => sum + (Number(s.quantity) || 0), 0)
+
+      const maxAllowed = Math.max(1, 20 - otherTotal)
+      if (finalNum > maxAllowed) finalNum = maxAllowed
+
+      setSlots(slots.map((s, i) => i === index ? { ...s, quantity: finalNum } : s))
+      return
+    }
+
+    setSlots(slots.map((s, i) => {
+      if (i !== index) return s;
+      if (field === 'weapon_id') return { ...s, weapon_id: value as string };
+      // Pour éviter les alertes TS, au cas où d'autres champs seraient ajoutés
+      return { ...s, [field]: value } as any;
+    }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,7 +149,7 @@ export default function CompositionsPage() {
     try {
       // Valider les slots
       const validSlots = slots.filter(s => s.weapon_id && s.quantity > 0)
-      
+
       // Vérifier les limites par groupe
       for (let group = 1; group <= formData.total_groups; group++) {
         const groupSlots = validSlots.filter(s => s.group_number === group)
@@ -244,7 +264,7 @@ export default function CompositionsPage() {
   }
 
   const groupSlotsForm = slots.filter(s => s.group_number === activeGroupForm)
-  const totalInGroupForm = groupSlotsForm.reduce((sum, s) => sum + s.quantity, 0)
+  const totalInGroupForm = groupSlotsForm.reduce((sum, s) => sum + (Number(s.quantity) || 0), 0)
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -275,12 +295,25 @@ export default function CompositionsPage() {
       {showForm && (
         <Card className="glass-effect border-slate-700/50">
           <CardHeader>
-            <CardTitle className="text-white">
-              {editingId ? 'Modifier la composition' : 'Nouvelle composition'}
-            </CardTitle>
-            <CardDescription className="text-slate-400">
-              Configurez les groupes et les armes requises
-            </CardDescription>
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowForm(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </Button>
+              <div>
+                <CardTitle className="text-white text-2xl">
+                  {editingId ? 'Modifier la composition' : 'Nouvelle composition'}
+                </CardTitle>
+                <CardDescription className="text-slate-400 mt-1">
+                  Configurez les groupes et les armes requises
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -325,12 +358,16 @@ export default function CompositionsPage() {
               <div>
                 <Label className="text-white mb-3 block">Slots par groupe</Label>
                 <Tabs value={activeGroupForm.toString()} onValueChange={(v) => setActiveGroupForm(parseInt(v))}>
-                  <TabsList className="bg-slate-800/50">
+                  <TabsList className="bg-slate-800/50 w-full flex-wrap h-auto gap-2 p-2 rounded-lg">
                     {Array.from({ length: formData.total_groups }, (_, i) => i + 1).map(groupNum => {
                       const groupSlots = slots.filter(s => s.group_number === groupNum)
-                      const total = groupSlots.reduce((sum, s) => sum + s.quantity, 0)
+                      const total = groupSlots.reduce((sum, s) => sum + (Number(s.quantity) || 0), 0)
                       return (
-                        <TabsTrigger key={groupNum} value={groupNum.toString()}>
+                        <TabsTrigger
+                          key={groupNum}
+                          value={groupNum.toString()}
+                          className="flex-1 min-w-[120px] py-2 text-[15px] font-semibold data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md hover:bg-slate-700/50 transition-all rounded-md"
+                        >
                           Groupe {groupNum} ({total}/20)
                         </TabsTrigger>
                       )
@@ -360,9 +397,9 @@ export default function CompositionsPage() {
                                   id={`quantity-${globalIndex}`}
                                   type="number"
                                   min="1"
-                                  max="20"
-                                  value={slot.quantity}
-                                  onChange={(e) => handleSlotChange(globalIndex, 'quantity', parseInt(e.target.value))}
+                                  max={Math.max(1, 20 - (totalInGroupForm - (Number(slot.quantity) || 0)))}
+                                  value={slot.quantity || ''}
+                                  onChange={(e) => handleSlotChange(globalIndex, 'quantity', e.target.value)}
                                   className="bg-slate-900/50 border-slate-700 text-white"
                                 />
                               </div>
@@ -449,7 +486,11 @@ export default function CompositionsPage() {
             compositions.map((comp) => {
               const totalSlots = comp.slots?.reduce((sum, s) => sum + s.quantity, 0) || 0
               return (
-                <Card key={comp.id} className="glass-effect border-slate-700/50 card-hover">
+                <Card
+                  key={comp.id}
+                  className="glass-effect border-slate-700/50 card-hover cursor-pointer transition-colors hover:bg-slate-800/50"
+                  onClick={() => handleEdit(comp)}
+                >
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -472,15 +513,10 @@ export default function CompositionsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleEdit(comp)}
-                          className="text-blue-400 hover:text-blue-300"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDelete(comp.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(comp.id);
+                          }}
                           className="text-red-400 hover:text-red-300"
                         >
                           <Trash2 className="w-4 h-4" />
