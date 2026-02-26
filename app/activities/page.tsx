@@ -11,7 +11,7 @@ import { ActivityCard } from '@/components/ActivityCard'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { Activity, ActivityRegistration, Composition, ActivityStatus } from '@/types'
-import { Plus, Calendar as CalendarIcon, History, Save, X } from 'lucide-react'
+import { Plus, Calendar as CalendarIcon, History, Save, X, Settings, Trash2 } from 'lucide-react'
 
 interface ActivityWithComposition extends Activity {
   id: string
@@ -25,6 +25,7 @@ export default function ActivitiesPage() {
   const [completedActivities, setCompletedActivities] = useState<ActivityWithComposition[]>([])
   const [compositions, setCompositions] = useState<Composition[]>([])
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [editingActivityId, setEditingActivityId] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -33,6 +34,7 @@ export default function ActivitiesPage() {
   })
   const [loadingData, setLoadingData] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
   const supabase = createClient()
 
@@ -110,33 +112,100 @@ export default function ActivitiesPage() {
     }
   }
 
-  const handleCreateActivity = async (e: React.FormEvent) => {
+  const handleOpenCreateModal = () => {
+    setEditingActivityId(null)
+    setFormData({ name: '', description: '', composition_id: '', scheduled_at: '' })
+    setError('')
+    setShowCreateModal(true)
+  }
+
+  const handleOpenEditModal = (activity: ActivityWithComposition) => {
+    setEditingActivityId(activity.id)
+    // Convertir la date du backend, typiquement ISO 8601, pour un <input type="datetime-local"> 
+    // qui attend le format "YYYY-MM-DDThh:mm"
+    const localDate = new Date(activity.scheduled_at)
+    // On doit ajuster l'offset pour avoir l'heure correcte au format YYYY-MM-DDTHH:mm
+    const tzOffsetMs = localDate.getTimezoneOffset() * 60000
+    const localISOTime = (new Date(localDate.getTime() - tzOffsetMs)).toISOString().slice(0, 16)
+
+    setFormData({
+      name: activity.name,
+      description: activity.description || '',
+      composition_id: activity.composition_id || '',
+      scheduled_at: localISOTime
+    })
+    setError('')
+    setShowCreateModal(true)
+  }
+
+  const handleSaveActivity = async (e: React.FormEvent) => {
     e.preventDefault()
     setSaving(true)
     setError('')
 
     try {
-      const { error: insertError } = await (supabase as any)
-        .from('activities')
-        .insert({
-          name: formData.name,
-          description: formData.description || null,
-          composition_id: formData.composition_id || null,
-          scheduled_at: formData.scheduled_at,
-          created_by: user?.id,
-          status: 'upcoming'
-        })
+      const activityData = {
+        name: formData.name,
+        description: formData.description || null,
+        composition_id: formData.composition_id || null,
+        scheduled_at: new Date(formData.scheduled_at).toISOString(),
+      }
 
-      if (insertError) throw insertError
+      if (editingActivityId) {
+        // Mode modification
+        const { error: updateError } = await (supabase as any)
+          .from('activities')
+          .update(activityData)
+          .eq('id', editingActivityId)
+
+        if (updateError) throw updateError
+      } else {
+        // Mode création
+        const { error: insertError } = await (supabase as any)
+          .from('activities')
+          .insert({
+            ...activityData,
+            created_by: user?.id,
+            status: 'upcoming'
+          })
+
+        if (insertError) throw insertError
+      }
 
       setShowCreateModal(false)
-      setFormData({ name: '', description: '', composition_id: '', scheduled_at: '' })
       loadActivities()
     } catch (error: any) {
-      console.error('Error creating activity:', error)
-      setError(error.message || "Erreur lors de la création")
+      console.error('Error saving activity:', error)
+      setError(error.message || "Erreur lors de l'enregistrement")
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleDeleteActivity = async () => {
+    if (!editingActivityId) return
+    if (!confirm("Voulez-vous vraiment supprimer cette activité ? Toutes les inscriptions et données liées seront effacées définitivement.")) {
+      return
+    }
+
+    setDeleting(true)
+    setError('')
+
+    try {
+      const { error: deleteError } = await (supabase as any)
+        .from('activities')
+        .delete()
+        .eq('id', editingActivityId)
+
+      if (deleteError) throw deleteError
+
+      setShowCreateModal(false)
+      loadActivities()
+    } catch (error: any) {
+      console.error('Error deleting activity:', error)
+      setError(error.message || "Erreur lors de la suppression")
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -182,8 +251,8 @@ export default function ActivitiesPage() {
           </div>
 
           {canManage && (
-            <Button 
-              onClick={() => setShowCreateModal(true)}
+            <Button
+              onClick={handleOpenCreateModal}
               className="bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:from-purple-600 hover:via-pink-600 hover:to-orange-600"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -231,6 +300,7 @@ export default function ActivitiesPage() {
                   isRegistered={!!activity.userRegistration}
                   compositionName={activity.composition?.name}
                   onStatusChange={canManage ? handleStatusChange : undefined}
+                  onEdit={canManage ? handleOpenEditModal : undefined}
                 />
               ))}
             </div>
@@ -260,6 +330,7 @@ export default function ActivitiesPage() {
                   isRegistered={!!activity.userRegistration}
                   compositionName={activity.composition?.name}
                   onStatusChange={canManage ? handleStatusChange : undefined}
+                  onEdit={canManage ? handleOpenEditModal : undefined}
                 />
               ))}
             </div>
@@ -267,20 +338,31 @@ export default function ActivitiesPage() {
         )}
       </div>
 
-      {/* Modal de Création d'Activité */}
+      {/* Modal de Création/Modification d'Activité */}
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
         <DialogContent className="glass-effect border-slate-700/50 max-w-2xl">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-white flex items-center gap-2">
-              <Plus className="w-6 h-6 text-purple-400" />
-              Créer une Activité
+              {editingActivityId ? (
+                <>
+                  <Settings className="w-6 h-6 text-purple-400" />
+                  Paramètres de l'Activité
+                </>
+              ) : (
+                <>
+                  <Plus className="w-6 h-6 text-purple-400" />
+                  Créer une Activité
+                </>
+              )}
             </DialogTitle>
             <DialogDescription className="text-slate-400">
-              Planifiez une nouvelle activité pour votre guilde
+              {editingActivityId
+                ? "Modifiez les détails de cette activité ou supprimez-la"
+                : "Planifiez une nouvelle activité pour votre guilde"}
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleCreateActivity} className="space-y-5 mt-4">
+          <form onSubmit={handleSaveActivity} className="space-y-5 mt-4">
             {error && (
               <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">
                 {error}
@@ -343,20 +425,37 @@ export default function ActivitiesPage() {
             </div>
 
             <div className="flex gap-3 pt-2">
+              {editingActivityId && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleDeleteActivity}
+                  disabled={saving || deleting}
+                  className="border-red-500/50 text-red-500 hover:bg-red-500/10 hover:text-red-400"
+                  title="Supprimer l'activité"
+                >
+                  {deleting ? (
+                    <div className="w-4 h-4 border-2 border-red-500/20 border-t-red-500 rounded-full animate-spin"></div>
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </Button>
+              )}
+
               <Button
                 type="submit"
                 className="flex-1 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:from-purple-600 hover:via-pink-600 hover:to-orange-600"
-                disabled={saving}
+                disabled={saving || deleting}
               >
                 {saving ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                    Création...
+                    Enregistrement...
                   </div>
                 ) : (
                   <>
                     <Save className="w-4 h-4 mr-2" />
-                    Créer l'activité
+                    {editingActivityId ? "Enregistrer les modifications" : "Créer l'activité"}
                   </>
                 )}
               </Button>
@@ -365,6 +464,7 @@ export default function ActivitiesPage() {
                 variant="outline"
                 onClick={() => setShowCreateModal(false)}
                 className="border-slate-700"
+                disabled={saving || deleting}
               >
                 <X className="w-4 h-4 mr-2" />
                 Annuler

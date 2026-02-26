@@ -10,7 +10,7 @@ import { WeaponSelector } from '@/components/WeaponSelector'
 import { createClient } from '@/lib/supabase/client'
 import type { Activity, Weapon, ActivityRegistration, Composition } from '@/types'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Calendar, Save } from 'lucide-react'
+import { ArrowLeft, Calendar, Save, Trash2 } from 'lucide-react'
 import Link from 'next/link'
 
 export default function RegisterToActivityPage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,6 +20,7 @@ export default function RegisterToActivityPage({ params }: { params: Promise<{ i
   const [composition, setComposition] = useState<Composition | null>(null)
   const [weapons, setWeapons] = useState<Weapon[]>([])
   const [existingRegistration, setExistingRegistration] = useState<ActivityRegistration | null>(null)
+  const [isAssignedToRoster, setIsAssignedToRoster] = useState(false)
   const [weapon1Id, setWeapon1Id] = useState('')
   const [weapon2Id, setWeapon2Id] = useState('')
   const [weapon3Id, setWeapon3Id] = useState('')
@@ -89,6 +90,18 @@ export default function RegisterToActivityPage({ params }: { params: Promise<{ i
         setWeapon2Id((registration as any).weapon2_id || '')
         setWeapon3Id((registration as any).weapon3_id || '')
         setNotes((registration as any).notes || '')
+
+        // Vérifier si l'utilisateur est déjà dans le roster
+        const { data: rosterEntry } = await supabase
+          .from('roasters')
+          .select('id')
+          .eq('activity_id', id)
+          .eq('user_id', user?.id!)
+          .maybeSingle()
+
+        if (rosterEntry) {
+          setIsAssignedToRoster(true)
+        }
       }
     } catch (error) {
       console.error('Error loading data:', error)
@@ -139,6 +152,33 @@ export default function RegisterToActivityPage({ params }: { params: Promise<{ i
     } catch (error: any) {
       console.error('Error saving registration:', error)
       setError(error.message || "Erreur lors de l'enregistrement")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleUnregister = async () => {
+    if (!existingRegistration || isAssignedToRoster) return;
+
+    if (!confirm("Voulez-vous vraiment annuler votre inscription à cette activité ?")) {
+      return;
+    }
+
+    setSaving(true)
+    setError('')
+
+    try {
+      const { error: deleteError } = await (supabase as any)
+        .from('activity_registrations')
+        .delete()
+        .eq('id', existingRegistration.id)
+
+      if (deleteError) throw deleteError
+
+      router.push('/activities')
+    } catch (error: any) {
+      console.error('Error deleting registration:', error)
+      setError(error.message || "Erreur lors de l'annulation de l'inscription")
     } finally {
       setSaving(false)
     }
@@ -231,12 +271,21 @@ export default function RegisterToActivityPage({ params }: { params: Promise<{ i
         </div>
       )}
 
-      <Card className={`glass-effect border-slate-700/50 ${!isRegistrationAllowed && !existingRegistration ? 'opacity-50 pointer-events-none' : ''}`}>
+      <Card className={`glass-effect border-slate-700/50 ${(!isRegistrationAllowed && !existingRegistration) || isAssignedToRoster ? 'opacity-50 pointer-events-none' : ''}`}>
         <CardHeader>
-          <CardTitle className="text-white">Vos choix d'armes</CardTitle>
-          <CardDescription className="text-slate-400">
-            Sélectionnez 1 à 3 armes que vous souhaitez jouer (par ordre de préférence)
-          </CardDescription>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-white">Vos choix d'armes</CardTitle>
+              <CardDescription className="text-slate-400">
+                Sélectionnez 1 à 3 armes que vous souhaitez jouer (par ordre de préférence)
+              </CardDescription>
+            </div>
+            {isAssignedToRoster && (
+              <div className="bg-purple-500/20 text-purple-400 px-3 py-1 rounded-md text-sm font-medium whitespace-nowrap">
+                Roster Verrouillé
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -292,7 +341,7 @@ export default function RegisterToActivityPage({ params }: { params: Promise<{ i
               <Button
                 type="submit"
                 className="flex-1 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:from-purple-600 hover:via-pink-600 hover:to-orange-600"
-                disabled={saving || !isRegistrationAllowed}
+                disabled={saving || !isRegistrationAllowed || isAssignedToRoster}
               >
                 {saving ? (
                   <div className="flex items-center gap-2">
@@ -308,10 +357,25 @@ export default function RegisterToActivityPage({ params }: { params: Promise<{ i
               </Button>
               <Link href="/activities">
                 <Button type="button" variant="outline" className="border-slate-700">
-                  Annuler
+                  Retour
                 </Button>
               </Link>
             </div>
+            {/* Bouton de désinscription si déjà inscrit */}
+            {existingRegistration && isRegistrationAllowed && !isAssignedToRoster && (
+              <div className="pt-2 border-t border-slate-700 mt-6 mt-4">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={handleUnregister}
+                  disabled={saving}
+                  className="w-full text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Annuler mon inscription
+                </Button>
+              </div>
+            )}
           </form>
         </CardContent>
       </Card>
