@@ -10,6 +10,7 @@ interface WeaponSelectorProps {
   label: string
   required?: boolean
   id: string
+  disabled?: boolean
 }
 
 export function WeaponSelector({
@@ -18,7 +19,8 @@ export function WeaponSelector({
   onChange,
   label,
   required = false,
-  id
+  id,
+  disabled = false
 }: WeaponSelectorProps) {
   // Grouper les armes par sous-catégorie
   const weaponsBySubcategory = weapons
@@ -45,7 +47,8 @@ export function WeaponSelector({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}
-        className="flex h-11 w-full rounded-md border border-slate-700 bg-slate-900/50 px-3 py-2 text-white focus:border-purple-500 focus:ring-purple-500/20 focus:outline-none transition-all"
+        disabled={disabled}
+        className="flex h-11 w-full rounded-md border border-slate-700 bg-slate-900/50 px-3 py-2 text-white focus:border-purple-500 focus:ring-purple-500/20 focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <option value="">-- Sélectionner une arme --</option>
         {sortedSubcategories.map((subcategory) => {

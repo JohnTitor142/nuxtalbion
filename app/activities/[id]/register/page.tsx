@@ -56,9 +56,12 @@ export default function RegisterToActivityPage({ params }: { params: Promise<{ i
       const comp = (activityData as any).composition
       setComposition(Array.isArray(comp) ? comp[0] : comp)
 
-      // Vérifier que l'activité accepte les inscriptions
-      if ((activityData as any).roaster_locked) {
-        setError("Les inscriptions sont fermées pour cette activité")
+      // Vérifier que l'activité accepte les inscriptions (upcoming ou ongoing)
+      const activityStatus = (activityData as any).status
+      const isRegistrationAllowed = activityStatus === 'upcoming' || activityStatus === 'ongoing'
+
+      if (!isRegistrationAllowed) {
+        setError("Les inscriptions sont fermées pour cette activité (statut: " + activityStatus + ")")
         return
       }
 
@@ -168,6 +171,8 @@ export default function RegisterToActivityPage({ params }: { params: Promise<{ i
     )
   }
 
+  const isRegistrationAllowed = activity?.status === 'upcoming' || activity?.status === 'ongoing'
+
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
       {/* Header */}
@@ -219,7 +224,14 @@ export default function RegisterToActivityPage({ params }: { params: Promise<{ i
       </Card>
 
       {/* Formulaire d'inscription */}
-      <Card className="glass-effect border-slate-700/50">
+      {!isRegistrationAllowed && !existingRegistration && (
+        <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-6 py-4 rounded-lg text-center">
+          <p className="font-semibold text-lg">Les inscriptions sont actuellement fermées pour cette activité.</p>
+          <p className="text-sm mt-1">Le statut de l'activité est "{activity?.status}".</p>
+        </div>
+      )}
+
+      <Card className={`glass-effect border-slate-700/50 ${!isRegistrationAllowed && !existingRegistration ? 'opacity-50 pointer-events-none' : ''}`}>
         <CardHeader>
           <CardTitle className="text-white">Vos choix d'armes</CardTitle>
           <CardDescription className="text-slate-400">
@@ -241,6 +253,7 @@ export default function RegisterToActivityPage({ params }: { params: Promise<{ i
               value={weapon1Id}
               onChange={setWeapon1Id}
               required
+              disabled={!isRegistrationAllowed}
             />
 
             <WeaponSelector
@@ -249,6 +262,7 @@ export default function RegisterToActivityPage({ params }: { params: Promise<{ i
               weapons={weapons}
               value={weapon2Id}
               onChange={setWeapon2Id}
+              disabled={!isRegistrationAllowed}
             />
 
             <WeaponSelector
@@ -257,6 +271,7 @@ export default function RegisterToActivityPage({ params }: { params: Promise<{ i
               weapons={weapons}
               value={weapon3Id}
               onChange={setWeapon3Id}
+              disabled={!isRegistrationAllowed}
             />
 
             <div className="space-y-2">
@@ -269,6 +284,7 @@ export default function RegisterToActivityPage({ params }: { params: Promise<{ i
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="bg-slate-900/50 border-slate-700 text-white placeholder:text-slate-500 min-h-[100px]"
+                disabled={!isRegistrationAllowed}
               />
             </div>
 
@@ -276,7 +292,7 @@ export default function RegisterToActivityPage({ params }: { params: Promise<{ i
               <Button
                 type="submit"
                 className="flex-1 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:from-purple-600 hover:via-pink-600 hover:to-orange-600"
-                disabled={saving}
+                disabled={saving || !isRegistrationAllowed}
               >
                 {saving ? (
                   <div className="flex items-center gap-2">

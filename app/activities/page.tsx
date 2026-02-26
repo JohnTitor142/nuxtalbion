@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { ActivityCard } from '@/components/ActivityCard'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { Activity, ActivityRegistration, Composition } from '@/types'
+import type { Activity, ActivityRegistration, Composition, ActivityStatus } from '@/types'
 import { Plus, Calendar as CalendarIcon, History, Save, X } from 'lucide-react'
 
 interface ActivityWithComposition extends Activity {
@@ -140,6 +140,21 @@ export default function ActivitiesPage() {
     }
   }
 
+  const handleStatusChange = async (activityId: string, newStatus: ActivityStatus) => {
+    try {
+      const { error: updateError } = await (supabase as any)
+        .from('activities')
+        .update({ status: newStatus })
+        .eq('id', activityId)
+
+      if (updateError) throw updateError
+      loadActivities()
+    } catch (err: any) {
+      console.error('Erreur lors du changement de statut:', err)
+      setError(err.message || 'Erreur lors du changement de statut')
+    }
+  }
+
   if (loading || loadingData) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -215,6 +230,7 @@ export default function ActivitiesPage() {
                   isUpcoming={true}
                   isRegistered={!!activity.userRegistration}
                   compositionName={activity.composition?.name}
+                  onStatusChange={canManage ? handleStatusChange : undefined}
                 />
               ))}
             </div>
@@ -243,6 +259,7 @@ export default function ActivitiesPage() {
                   isUpcoming={false}
                   isRegistered={!!activity.userRegistration}
                   compositionName={activity.composition?.name}
+                  onStatusChange={canManage ? handleStatusChange : undefined}
                 />
               ))}
             </div>

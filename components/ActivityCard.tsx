@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import type { Activity, UserRole } from '@/types'
+import type { ActivityStatus } from '@/types'
 import { Calendar, Users, CheckCircle, Edit, Play } from 'lucide-react'
 import { ACTIVITY_STATUS_LABELS } from '@/types'
 import Link from 'next/link'
@@ -14,6 +15,7 @@ interface ActivityCardProps {
   isUpcoming: boolean
   isRegistered?: boolean
   compositionName?: string
+  onStatusChange?: (activityId: string, newStatus: ActivityStatus) => void
 }
 
 export function ActivityCard({
@@ -21,9 +23,12 @@ export function ActivityCard({
   userRole,
   isUpcoming,
   isRegistered,
-  compositionName
+  compositionName,
+  onStatusChange
 }: ActivityCardProps) {
   const canManage = userRole === 'admin' || userRole === 'shotcaller'
+  const canRegisterOrEdit = activity.status === 'upcoming' || activity.status === 'ongoing'
+  const canEditRoaster = canManage && activity.status !== 'completed'
   const router = useRouter()
 
   const statusColors = {
@@ -65,10 +70,25 @@ export function ActivityCard({
                 </p>
               )}
             </div>
-            <div>
-              <span className={`px-4 py-2 rounded-lg bg-gradient-to-r text-sm font-medium border shadow-lg ${statusColors[activity.status]}`}>
-                {ACTIVITY_STATUS_LABELS[activity.status]}
-              </span>
+            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+              {onStatusChange && canManage ? (
+                <label className="flex items-center gap-2 text-sm text-slate-400">
+                  <span className="whitespace-nowrap">Statut :</span>
+                  <select
+                    value={activity.status}
+                    onChange={(e) => onStatusChange(activity.id, e.target.value as ActivityStatus)}
+                    className="rounded-md border border-slate-600 bg-slate-800/80 px-3 py-1.5 text-white text-sm font-medium focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 focus:outline-none cursor-pointer"
+                  >
+                    <option value="upcoming">{ACTIVITY_STATUS_LABELS.upcoming}</option>
+                    <option value="ongoing">{ACTIVITY_STATUS_LABELS.ongoing}</option>
+                    <option value="completed">{ACTIVITY_STATUS_LABELS.completed}</option>
+                  </select>
+                </label>
+              ) : (
+                <span className={`px-4 py-2 rounded-lg bg-gradient-to-r text-sm font-medium border shadow-lg ${statusColors[activity.status]}`}>
+                  {ACTIVITY_STATUS_LABELS[activity.status]}
+                </span>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -86,7 +106,7 @@ export function ActivityCard({
 
             {/* Actions */}
             <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-              {isUpcoming && !activity.roaster_locked && (
+              {canRegisterOrEdit && (
                 <>
                   {!isRegistered ? (
                     <Link href={`/activities/${activity.id}/register`}>
@@ -105,7 +125,7 @@ export function ActivityCard({
                 </>
               )}
 
-              {canManage && isUpcoming && (
+              {canEditRoaster && (
                 <Link href={`/activities/${activity.id}/roaster`}>
                   <Button size="sm" variant="outline" className="border-slate-700">
                     <Users className="w-4 h-4 mr-1" />
