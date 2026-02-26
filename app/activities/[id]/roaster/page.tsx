@@ -7,8 +7,12 @@ import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import type { Activity, ActivityRegistration, Weapon, UserProfile, CompositionSlot, ActivityStatus } from '@/types'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Users, Save, Play, Lock } from 'lucide-react'
+import { ArrowLeft, Users, Save, Play, Lock, Edit, Settings, Trash2, X } from 'lucide-react'
 import Link from 'next/link'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, pointerWithin, useSensor, useSensors, PointerSensor, MouseSensor } from '@dnd-kit/core'
 import { useDroppable } from '@dnd-kit/core'
 import { useDraggable } from '@dnd-kit/core'
@@ -232,6 +236,20 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [activeId, setActiveId] = useState<string | null>(null)
+
+  // Nouveaux états pour les paramètres
+  const [compositions, setCompositions] = useState<any[]>([])
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    composition_id: '',
+    scheduled_at: ''
+  })
+  const [settingsSaving, setSettingsSaving] = useState(false)
+  const [settingsDeleting, setSettingsDeleting] = useState(false)
+  const [settingsError, setSettingsError] = useState('')
+
   const supabase = createClient()
   const router = useRouter()
 
@@ -319,6 +337,13 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
         .eq('is_active', true)
 
       setWeapons(weaponsData || [])
+
+      // Charger les compositions
+      const { data: comps } = await supabase
+        .from('compositions')
+        .select('*')
+        .order('name', { ascending: true })
+      setCompositions(comps || [])
 
       // Charger le roaster existant
       const { data: existingRoaster } = await supabase
@@ -467,6 +492,76 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
     }
   }
 
+  const handleOpenSettings = () => {
+    if (!activity) return
+    const localDate = new Date(activity.scheduled_at)
+    const tzOffsetMs = localDate.getTimezoneOffset() * 60000
+    const localISOTime = (new Date(localDate.getTime() - tzOffsetMs)).toISOString().slice(0, 16)
+
+    setFormData({
+      name: activity.name,
+      description: activity.description || '',
+      composition_id: activity.composition_id || '',
+      scheduled_at: localISOTime
+    })
+    setSettingsError('')
+    setShowSettingsModal(true)
+  }
+
+  const handleSaveSettings = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSettingsSaving(true)
+    setSettingsError('')
+
+    try {
+      const activityData = {
+        name: formData.name,
+        description: formData.description || null,
+        composition_id: formData.composition_id || null,
+        scheduled_at: new Date(formData.scheduled_at).toISOString(),
+      }
+
+      const { error: updateError } = await (supabase as any)
+        .from('activities')
+        .update(activityData)
+        .eq('id', id)
+
+      if (updateError) throw updateError
+
+      setShowSettingsModal(false)
+      loadData()
+    } catch (error: any) {
+      console.error('Error saving activity:', error)
+      setSettingsError(error.message || "Erreur lors de l'enregistrement")
+    } finally {
+      setSettingsSaving(false)
+    }
+  }
+
+  const handleDeleteActivity = async () => {
+    if (!confirm("Voulez-vous vraiment supprimer cette activité ? Toutes les inscriptions et données liées seront effacées définitivement.")) {
+      return
+    }
+
+    setSettingsDeleting(true)
+    setSettingsError('')
+
+    try {
+      const { error: deleteError } = await (supabase as any)
+        .from('activities')
+        .delete()
+        .eq('id', id)
+
+      if (deleteError) throw deleteError
+
+      router.push('/activities')
+    } catch (error: any) {
+      console.error('Error deleting activity:', error)
+      setSettingsError(error.message || "Erreur lors de la suppression")
+      setSettingsDeleting(false)
+    }
+  }
+
   const handleStatusChange = async (newStatus: ActivityStatus) => {
     setSaving(true)
     setError('')
@@ -526,6 +621,9 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
   const assignedUserIds = new Set(roasterSlots.filter(s => s.user_id).map(s => s.user_id))
   const availableRegistrations = registrations.filter(r => !assignedUserIds.has(r.user_id))
 
+  const isRegistered = user ? registrations.some(r => r.user_id === user.id) : false
+  const canRegisterOrEdit = activity?.status === 'upcoming' || activity?.status === 'ongoing'
+
   return (
     <DndContext
       sensors={sensors}
@@ -551,15 +649,49 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-2 md:gap-3 items-center">
+            {canManage && (
+              <Button
+                onClick={handleOpenSettings}
+                variant="outline"
+                className="border-slate-700 hover:bg-slate-800 h-[40px] px-3 md:px-4"
+                title="Paramètres de l'activité"
+              >
+                <Settings className="w-4 h-4 md:mr-2 text-slate-400" />
+                <span className="hidden md:inline">Paramètres</span>
+              </Button>
+            )}
+
+            {canRegisterOrEdit && (
+              <>
+                {!isRegistered ? (
+                  <Link href={`/activities/${activity.id}/register`}>
+                    <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 h-[40px] px-3 md:px-4">
+                      <span className="hidden md:inline">S'inscrire</span>
+                      <span className="md:hidden">S'inscrire</span>
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link href={`/activities/${activity.id}/register`}>
+                    <Button variant="outline" className="border-slate-700 text-purple-300 hover:text-purple-200 h-[40px] px-3 md:px-4">
+                      <Edit className="w-4 h-4 md:mr-2" />
+                      <span className="hidden md:inline">Gérer mon inscription</span>
+                      <span className="md:hidden">Gérer</span>
+                    </Button>
+                  </Link>
+                )}
+              </>
+            )}
+
             {canManage && (
               <>
-                <label className="flex items-center gap-2 text-sm text-slate-400 mr-2">
-                  <span className="whitespace-nowrap hidden sm:inline">Statut :</span>
+                <div className="w-px h-8 bg-slate-700 mx-1 hidden md:block"></div>
+                <label className="flex items-center gap-2 text-sm text-slate-400">
+                  <span className="whitespace-nowrap hidden lg:inline">Statut :</span>
                   <select
                     value={activity?.status || 'upcoming'}
                     onChange={(e) => handleStatusChange(e.target.value as ActivityStatus)}
-                    className="rounded-md border border-slate-600 bg-slate-800/80 px-3 py-1.5 text-white text-sm font-medium focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 focus:outline-none cursor-pointer h-[40px]"
+                    className="rounded-md border border-slate-600 bg-slate-800/80 px-2 md:px-3 py-1.5 text-white text-sm font-medium focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 focus:outline-none cursor-pointer h-[40px]"
                     disabled={saving}
                   >
                     <option value="upcoming">{ACTIVITY_STATUS_LABELS.upcoming}</option>
@@ -570,11 +702,12 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
                 <Button
                   onClick={handleSave}
                   variant="outline"
-                  className="border-slate-700 h-[40px]"
+                  className="border-slate-700 h-[40px] px-3 md:px-4"
                   disabled={saving}
                 >
-                  <Save className="w-4 h-4 mr-2" />
-                  Sauvegarder
+                  <Save className="w-4 h-4 md:mr-2" />
+                  <span className="hidden md:inline">Sauvegarder roaster</span>
+                  <span className="md:hidden">Sauver</span>
                 </Button>
               </>
             )}
@@ -738,6 +871,129 @@ export default function RoasterPage({ params }: { params: Promise<{ id: string }
           </div>
         ) : null}
       </DragOverlay>
+
+      {/* Modal de Paramètres d'Activité */}
+      <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
+        <DialogContent className="glass-effect border-slate-700/50 max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-white flex items-center gap-2">
+              <Settings className="w-6 h-6 text-purple-400" />
+              Paramètres de l'Activité
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Modifiez les détails de cette activité ou supprimez-la
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveSettings} className="space-y-5 mt-4">
+            {settingsError && (
+              <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-lg">
+                {settingsError}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-white font-medium">Nom de l'activité *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Ex: ZvZ Caerleon"
+                required
+                className="bg-slate-900/50 border-slate-700 text-white"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="scheduled_at" className="text-white font-medium">Date et heure *</Label>
+              <Input
+                id="scheduled_at"
+                type="datetime-local"
+                value={formData.scheduled_at}
+                onChange={(e) => setFormData({ ...formData, scheduled_at: e.target.value })}
+                required
+                className="bg-slate-900/50 border-slate-700 text-white"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="composition_id" className="text-white font-medium">Composition</Label>
+              <select
+                id="composition_id"
+                value={formData.composition_id}
+                onChange={(e) => setFormData({ ...formData, composition_id: e.target.value })}
+                className="flex h-11 w-full rounded-md border border-slate-700 bg-slate-900/50 px-3 py-2 text-white focus:border-purple-500 focus:ring-purple-500/20 focus:outline-none"
+              >
+                <option value="">-- Aucune composition --</option>
+                {compositions.map((comp) => (
+                  <option key={comp.id} value={comp.id}>
+                    {comp.name} ({comp.total_groups} groupe{comp.total_groups > 1 ? 's' : ''})
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-slate-500 mt-1">
+                La composition servira de template pour les inscriptions. Modifier ceci n'impacte pas le roster déjà construit de manière immédiate, mais changera le template des backgrounds.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-white font-medium">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Détails de l'activité..."
+                className="bg-slate-900/50 border-slate-700 text-white min-h-[100px]"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleDeleteActivity}
+                disabled={settingsSaving || settingsDeleting}
+                className="border-red-500/50 text-red-500 hover:bg-red-500/10 hover:text-red-400"
+                title="Supprimer l'activité"
+              >
+                {settingsDeleting ? (
+                  <div className="w-4 h-4 border-2 border-red-500/20 border-t-red-500 rounded-full animate-spin"></div>
+                ) : (
+                  <Trash2 className="w-4 h-4" />
+                )}
+              </Button>
+
+              <Button
+                type="submit"
+                className="flex-1 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-500 hover:from-purple-600 hover:via-pink-600 hover:to-orange-600"
+                disabled={settingsSaving || settingsDeleting}
+              >
+                {settingsSaving ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                    Enregistrement...
+                  </div>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4 mr-2" />
+                    Enregistrer les modifications
+                  </>
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowSettingsModal(false)}
+                className="border-slate-700"
+                disabled={settingsSaving || settingsDeleting}
+              >
+                <X className="w-4 h-4 mr-2" />
+                Annuler
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </DndContext>
   )
 }

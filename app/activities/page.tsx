@@ -235,6 +235,45 @@ export default function ActivitiesPage() {
     )
   }
 
+  // Fonction utilitaire pour grouper les activités par date
+  const groupedUpcomingActivities = upcomingActivities.reduce((groups, activity) => {
+    const date = new Date(activity.scheduled_at)
+    // On garde uniquement la date "YYYY-MM-DD" pour le groupement
+    const dateKey = date.toISOString().split('T')[0]
+
+    if (!groups[dateKey]) {
+      groups[dateKey] = []
+    }
+    groups[dateKey].push(activity)
+
+    return groups
+  }, {} as Record<string, ActivityWithComposition[]>)
+
+  // Fonction pour formater la date du groupe
+  const formatGroupDate = (dateString: string) => {
+    const date = new Date(dateString)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const tomorrow = new Date(today)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+
+    const activityDate = new Date(date)
+    activityDate.setHours(0, 0, 0, 0)
+
+    if (activityDate.getTime() === today.getTime()) {
+      return "Aujourd'hui"
+    } else if (activityDate.getTime() === tomorrow.getTime()) {
+      return "Demain"
+    } else {
+      return date.toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long'
+      }).replace(/^\w/, c => c.toUpperCase()) // Majuscule 1ere lettre
+    }
+  }
+
   return (
     <>
       <div className="space-y-10 animate-fade-in max-w-7xl mx-auto px-6">
@@ -290,19 +329,30 @@ export default function ActivitiesPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="space-y-6">
-              {upcomingActivities.map((activity) => (
-                <ActivityCard
-                  key={activity.id}
-                  activity={activity}
-                  userRole={user!.role}
-                  isUpcoming={true}
-                  isRegistered={!!activity.userRegistration}
-                  compositionName={activity.composition?.name}
-                  onStatusChange={canManage ? handleStatusChange : undefined}
-                  onEdit={canManage ? handleOpenEditModal : undefined}
-                />
-              ))}
+            <div className="space-y-8">
+              {Object.entries(groupedUpcomingActivities)
+                .sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime())
+                .map(([dateString, activities]) => (
+                  <div key={dateString} className="space-y-4">
+                    <h3 className="text-lg font-semibold text-slate-300 border-b border-slate-700/50 pb-2">
+                      {formatGroupDate(dateString)}
+                    </h3>
+                    <div className="space-y-4">
+                      {activities.map((activity) => (
+                        <ActivityCard
+                          key={activity.id}
+                          activity={activity}
+                          userRole={user!.role}
+                          isUpcoming={true}
+                          isRegistered={!!activity.userRegistration}
+                          compositionName={activity.composition?.name}
+                          onStatusChange={canManage ? handleStatusChange : undefined}
+                          onEdit={canManage ? handleOpenEditModal : undefined}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
             </div>
           )}
         </div>
