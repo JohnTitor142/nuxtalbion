@@ -18,6 +18,7 @@ export interface Database {
           username: string
           pin: string
           role: UserRole
+          silver: number
           is_active: boolean
           created_at: string
           updated_at: string
@@ -27,6 +28,7 @@ export interface Database {
           username: string
           pin: string
           role?: UserRole
+          silver?: number
           is_active?: boolean
           created_at?: string
           updated_at?: string
@@ -36,6 +38,7 @@ export interface Database {
           username?: string
           pin?: string
           role?: UserRole
+          silver?: number
           is_active?: boolean
           created_at?: string
           updated_at?: string

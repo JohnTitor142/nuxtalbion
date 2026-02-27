@@ -5,7 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { ActivityRegistration, Activity, Roaster, Weapon } from '@/types'
-import { User, Calendar, Trophy, Shield, Users as UsersIcon } from 'lucide-react'
+import { User, Calendar, Trophy, Shield, Users as UsersIcon, Coins } from 'lucide-react'
+
+// Helper pour formater le silver
+function formatSilver(amount: number): string {
+  if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M'
+  if (amount >= 1_000) return (amount / 1_000).toFixed(1).replace(/\.0$/, '') + 'K'
+  return amount.toLocaleString('fr-FR')
+}
 import { getWeaponIcon } from '@/types'
 
 interface RegistrationWithDetails extends ActivityRegistration {
@@ -115,7 +122,23 @@ export default function ProfilePage() {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-6 md:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {/* Silver */}
+        <Card className="glass-effect border-yellow-500/30 hover:border-yellow-500/50 transition-colors">
+          <CardContent className="pt-8 pb-8">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-500 flex items-center justify-center shadow-lg shadow-yellow-500/25">
+                <Coins className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <p className="text-3xl font-bold text-yellow-400">{formatSilver(user!.silver ?? 0)}</p>
+                <p className="text-base text-slate-400">Silver</p>
+                <p className="text-xs text-slate-500">{(user!.silver ?? 0).toLocaleString('fr-FR')} silver</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="glass-effect border-slate-700/50">
           <CardContent className="pt-8 pb-8">
             <div className="flex items-center gap-4">

@@ -26,6 +26,7 @@ CREATE TABLE users_profiles (
     username TEXT UNIQUE NOT NULL,
     pin TEXT NOT NULL,  -- PIN stocké en clair (4 chiffres)
     role user_role DEFAULT 'user' NOT NULL,
+    silver BIGINT DEFAULT 0 NOT NULL,
     is_active BOOLEAN DEFAULT true NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,

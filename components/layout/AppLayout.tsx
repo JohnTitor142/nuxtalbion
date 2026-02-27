@@ -11,12 +11,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   const isAuthPage = pathname === '/login' || pathname === '/signup'
+  const isPublicPage = isAuthPage || pathname === '/leaderboard'
 
   useEffect(() => {
-    if (!loading && !user && !isAuthPage) {
+    if (!loading && !user && !isPublicPage) {
       router.push('/login')
     }
-  }, [user, loading, isAuthPage, router])
+  }, [user, loading, isPublicPage, router])
 
   if (loading) {
     return (
@@ -26,7 +27,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
           <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
         </div>
-        
+
         {/* Loading content */}
         <div className="relative z-10 flex flex-col items-center gap-4">
           <div className="w-16 h-16 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin"></div>
@@ -48,7 +49,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="absolute bottom-1/3 left-1/3 w-96 h-96 bg-pink-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '3s' }}></div>
         <div className="absolute top-1/2 right-1/3 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '6s' }}></div>
       </div>
-      
+
       <Sidebar />
       <main className="flex-1 overflow-y-auto relative z-10">
         <div className="w-full h-full px-12 py-12">

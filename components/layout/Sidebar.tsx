@@ -7,15 +7,16 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { useAuth } from '@/hooks/useAuth'
-import { 
+import {
   Calendar,
-  Puzzle, 
-  Users, 
-  Sword, 
+  Puzzle,
+  Users,
+  Sword,
   Shield,
   LogOut,
   Sparkles,
-  User
+  User,
+  Trophy
 } from 'lucide-react'
 
 interface NavItem {
@@ -30,6 +31,11 @@ const navItems: NavItem[] = [
     title: 'Activités',
     href: '/activities',
     icon: Calendar,
+  },
+  {
+    title: 'Leaderboard',
+    href: '/leaderboard',
+    icon: Trophy,
   },
   {
     title: 'Mon Profil',
@@ -80,7 +86,7 @@ export function Sidebar() {
     <div className="flex flex-col h-full glass-effect border-r border-slate-700/50 w-64 relative overflow-hidden">
       {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-pink-500/5 pointer-events-none"></div>
-      
+
       <div className="relative z-10 p-6">
         <Link href="/activities" className="flex items-center gap-3 group">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center shadow-lg shadow-purple-500/25 group-hover:shadow-xl group-hover:shadow-purple-500/40 transition-all">
@@ -97,7 +103,7 @@ export function Sidebar() {
         <nav className="space-y-1">
           {navItems.map((item) => {
             if (!canAccessItem(item)) return null
-            
+
             const Icon = item.icon
             const isActive = pathname === item.href
 
@@ -138,7 +144,7 @@ export function Sidebar() {
             <nav className="space-y-1">
               {shotcallerNavItems.map((item) => {
                 if (!canAccessItem(item)) return null
-                
+
                 const Icon = item.icon
                 const isActive = pathname === item.href
 
@@ -181,7 +187,7 @@ export function Sidebar() {
             <nav className="space-y-1">
               {adminNavItems.map((item) => {
                 if (!canAccessItem(item)) return null
-                
+
                 const Icon = item.icon
                 const isActive = pathname === item.href
 
