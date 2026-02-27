@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
 import { Trophy, Coins, Medal, Crown, TrendingUp } from 'lucide-react'
 
 interface LeaderboardEntry {
@@ -157,9 +158,12 @@ export default function LeaderboardPage() {
                                                 </span>
                                             </div>
                                             <div className="min-w-0">
-                                                <p className={`font-semibold truncate ${index < 3 ? style.text : 'text-white'}`}>
+                                                <Link
+                                                    href={`/profile/${player.username}`}
+                                                    className={`font-semibold truncate block hover:underline ${index < 3 ? style.text : 'text-white hover:text-purple-300'}`}
+                                                >
                                                     {player.username}
-                                                </p>
+                                                </Link>
                                                 <p className="text-xs text-slate-500 capitalize">{player.role === 'admin' ? 'Admin' : player.role === 'shotcaller' ? 'Shotcaller' : 'Joueur'}</p>
                                             </div>
                                         </div>

@@ -37,11 +37,7 @@ const navItems: NavItem[] = [
     href: '/leaderboard',
     icon: Trophy,
   },
-  {
-    title: 'Mon Profil',
-    href: '/profile',
-    icon: User,
-  },
+
 ]
 
 const shotcallerNavItems: NavItem[] = [
@@ -105,7 +101,7 @@ export function Sidebar() {
             if (!canAccessItem(item)) return null
 
             const Icon = item.icon
-            const isActive = pathname === item.href
+            const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
 
             return (
               <Link
@@ -129,6 +125,30 @@ export function Sidebar() {
               </Link>
             )
           })}
+          {/* Mon Profil - lien dynamique */}
+          {user && (() => {
+            const isActive = pathname.startsWith('/profile')
+            return (
+              <Link
+                href={`/profile/${user.username}`}
+                className={cn(
+                  'flex items-center gap-3 px-4 py-3 rounded-xl transition-all group relative overflow-hidden',
+                  isActive
+                    ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-white shadow-lg shadow-purple-500/10'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                )}
+              >
+                {isActive && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-pink-500/10 blur-xl"></div>
+                )}
+                <User className={cn(
+                  "h-5 w-5 relative z-10 transition-transform group-hover:scale-110",
+                  isActive && "text-purple-400"
+                )} />
+                <span className="relative z-10 font-medium">Mon Profil</span>
+              </Link>
+            )
+          })()}
         </nav>
 
         {/* Section Shotcaller */}
