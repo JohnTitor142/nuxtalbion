@@ -83,9 +83,9 @@ function PlayerCard({ registration, selectedWeaponId, onSelectWeapon, isDragging
 
       {/* Sélection des armes - UNIQUEMENT avec images */}
       <div className="flex gap-4 justify-center">
-        {weapons.map((weapon) => (
+        {weapons.map((weapon, idx) => (
           <button
-            key={weapon.id}
+            key={`${weapon.id}-${idx}`}
             onClick={(e) => {
               e.stopPropagation()
               onSelectWeapon(weapon.id)
